@@ -1,0 +1,808 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SHAX</title>
+  <link rel="stylesheet" href="./css/style.css" />
+</head>
+<body data-theme="dark">
+  <main class="app-shell" id="appShell">
+    <header class="topbar">
+      <div class="brand">
+        
+        <div>
+          <div class="brand-line"><div class="brand-name"><b>SH</b><span>AX</span></div><span class="version-chip">3.3.1</span></div>
+          <div class="brand-tagline">AFTER EFFECTS TOOLKIT</div>
+        </div>
+      </div>
+      <div class="topbar-tools">
+        <div class="ae-link" aria-hidden="true"><i></i><span id="aeConnectionLabel">CONNECT</span></div>
+        <div class="theme-switch" id="themeSwitch" role="group" aria-label="Appearance">
+          <button type="button" class="theme-option" id="themeLight" data-theme-value="light" aria-label="Light appearance" title="Light"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="3.1"/><path d="M10 1.8v2M10 16.2v2M1.8 10h2M16.2 10h2M4.2 4.2l1.4 1.4M14.4 14.4l1.4 1.4M15.8 4.2l-1.4 1.4M5.6 14.4l-1.4 1.4"/></svg></button>
+          <button type="button" class="theme-option active" id="themeDark" data-theme-value="dark" aria-label="Dark appearance" title="Dark"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M16.5 13.2A7.3 7.3 0 0 1 6.8 3.5 7.3 7.3 0 1 0 16.5 13.2Z"/></svg></button>
+        </div>
+        <button class="icon-button" id="settingsBtn" aria-label="Help and shortcuts" title="Help and shortcuts">?</button>
+      </div>
+    </header>
+
+    <div class="workspace">
+      <aside class="side-rail" aria-label="SHAX navigation">
+        <nav class="tabs" aria-label="SHAX sections">
+          <div class="rail-group-label">Create</div>
+          <button class="tab active" data-tab="animate"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="M7 5.2 14.2 10 7 14.8Z"/><circle cx="10" cy="10" r="7.2"/></svg></span><small>Animate</small></button>
+          <button class="tab" data-tab="sequence"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 20 20"><circle cx="5" cy="5" r="1.2"/><circle cx="5" cy="10" r="1.2"/><circle cx="5" cy="15" r="1.2"/><path d="M8 5h7M8 10h7M8 15h7"/></svg></span><small>Sequence</small></button>
+          <div class="rail-group-label">Layout</div>
+          <button class="tab" data-tab="align"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="M3.5 4.5v11M6.5 6.5h8M6.5 10h5.5M6.5 13.5h7"/></svg></span><small>Align</small></button>
+          <button class="tab" data-tab="resize"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="M7 4H4v3M13 4h3v3M7 16H4v-3M13 16h3v-3M7 7l-3-3M13 7l3-3M7 13l-3 3M13 13l3 3"/></svg></span><small>Resize</small></button>
+          <div class="rail-group-label">System</div>
+          <button class="tab" data-tab="brand"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="M10 3.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13Z"/><circle cx="8" cy="8" r="1"/><circle cx="12" cy="7" r="1"/><circle cx="13" cy="11" r="1"/><path d="M10 16.5c1.4 0 2-1 1.3-2-.7-1 0-2 1.2-2"/></svg></span><small>Brand</small></button>
+          <button class="tab" data-tab="vault"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="M4 6.5h12v9H4zM6 4.5h8l1.5 2H4.5zM8 10h4"/></svg></span><small>Vault</small></button>
+          <button class="tab" data-tab="organize"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="M3.5 6h5l1-1.5h7v4h-13zM3.5 9.5h13v6h-13z"/></svg></span><small>Organize</small></button>
+        </nav>
+        <div class="rail-signature" aria-hidden="true"><b>SH</b><span>3.3.1</span></div>
+      </aside>
+
+      <div class="workspace-content">
+        <div class="workspace-header">
+          <div class="workspace-heading">
+            <span id="pageKicker">CREATE</span>
+            <strong id="pageTitle">Animate</strong>
+          </div>
+          <div class="context-chip" id="contextChip"><i></i><span>Motion</span></div>
+        </div>
+
+    <section class="panel-page active motion-library-page" id="animate">
+      <section class="card motion-library-card">
+        <div class="motion-library-topbar">
+          <div>
+            <h2>Browse Animations</h2>
+          </div>
+          <div class="motion-topbar-stats"><div class="motion-library-count"><b>56</b><small>motions</small></div><div class="motion-selection-pill"><span id="layerCount">0</span><small>selected</small></div></div>
+        </div>
+
+        <div class="motion-selected-strip">
+          <div class="selection-empty motion-selection-empty" id="selectionState">
+            <div class="selection-icon">◫</div>
+            <div><strong>Select layers in After Effects</strong><span>Choose a preset, preview it, then apply.</span></div>
+          </div>
+          <div class="layer-list motion-layer-list" id="layerList" hidden></div>
+          <button class="motion-refresh-button" id="refreshSelection" title="Refresh selected layers" aria-label="Refresh selected layers">↻</button>
+        </div>
+
+        <div class="shax-picks" id="shaxPicks" hidden>
+          <div class="shax-picks-heading"><strong>SHAX PICKS</strong><small id="shaxPicksReason">Suggestions based on your selected layers</small></div>
+          <div class="shax-picks-buttons" id="shaxPicksButtons"></div>
+        </div>
+
+        <div class="motion-browser-toolbar">
+          <label class="motion-search-wrap" for="motionSearch">
+            <span>⌕</span>
+            <input id="motionSearch" type="text" placeholder="Search animations…" autocomplete="off" />
+          </label>
+          <div class="motion-view-switch" role="group" aria-label="Motion library filter">
+            <button type="button" class="motion-view-chip active" data-motion-view="all">All</button>
+            <button type="button" class="motion-view-chip" data-motion-view="favorites">♡ Favorites</button>
+            <button type="button" class="motion-view-chip" data-motion-view="recent">Recent</button>
+            <button type="button" class="motion-view-chip" data-motion-view="mixes">My Mixes</button>
+          </div>
+        </div>
+
+        <div class="motion-browser-layout">
+          <aside class="motion-categories" aria-label="Animation categories">
+            <button type="button" class="motion-category active" data-motion-category="all"><span>✦</span><b>All</b></button>
+            <button type="button" class="motion-category" data-motion-category="entrance"><span>↗</span><b>Entrances</b></button>
+            <button type="button" class="motion-category" data-motion-category="scale"><span>◫</span><b>Scale</b></button>
+            <button type="button" class="motion-category" data-motion-category="ui"><span>⌁</span><b>UI Motion</b></button>
+            <button type="button" class="motion-category" data-motion-category="organic"><span>≈</span><b>Organic</b></button>
+            <button type="button" class="motion-category" data-motion-category="dynamic"><span>⚡</span><b>Dynamic</b></button>
+            <button type="button" class="motion-category" data-motion-category="cinematic"><span>◐</span><b>Cinematic</b></button>
+            <button type="button" class="motion-category" data-motion-category="minimal"><span>·</span><b>Minimal</b></button>
+          </aside>
+
+          <div class="motion-grid-shell">
+            <div class="motion-grid" id="motionPresetGrid"></div>
+            <div class="motion-empty-results" id="motionEmptyResults" hidden>
+              <span>⌕</span>
+              <strong>No animations found</strong>
+              <small>Try another category or search term.</small>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card motion-inspector-card">
+        <div class="motion-inspector-preview" id="motionInspectorPreview">
+          <div class="motion-preview-stage preview-smooth-rise" id="motionInspectorStage">
+            <i class="motion-demo-shadow"></i>
+            <i class="motion-demo-object"></i>
+            <i class="motion-demo-line"></i>
+          </div>
+          <span class="motion-inspector-badge" id="motionPresetBadge">IN</span>
+          <button type="button" class="motion-favorite-large" id="motionFavoriteLarge" title="Add to favorites">♡</button>
+        </div>
+
+        <div class="motion-inspector-heading">
+          <div>
+            <h2 id="motionPresetTitle">Smooth Rise</h2>
+          </div>
+          <span id="motionPresetCategory">Entrance</span>
+        </div>
+        <p class="motion-preset-description" id="motionPresetDescription">A restrained upward entrance with clean velocity and a soft finish.</p>
+
+        <select id="motionStyle" class="motion-engine-select" aria-hidden="true" tabindex="-1">
+          <option value="smooth">Smooth UI</option>
+          <option value="clean">Clean Interface</option>
+          <option value="snappy">Snappy UI</option>
+          <option value="soft">Soft Float</option>
+          <option value="cinematic">Cinematic UI</option>
+        </select>
+
+        <div class="motion-quick-settings">
+          <div class="motion-setting-row">
+            <div class="slider-top"><span>Intensity</span><output id="energyValue">52%</output></div>
+            <input type="range" id="energy" min="0" max="100" value="52" />
+          </div>
+
+          <div class="motion-setting-row">
+            <div class="slider-top"><span>Stagger</span><output id="staggerValue">18%</output></div>
+            <input type="range" id="stagger" min="0" max="100" value="18" />
+          </div>
+
+          <div class="motion-setting-split">
+            <label>
+              <span>Duration</span>
+              <div class="input-with-suffix compact-motion-input">
+                <input id="duration" type="number" min="0.2" step="0.05" value="0.85" />
+                <span>s</span>
+              </div>
+            </label>
+            <div id="directionSetting" class="motion-direction-setting">
+              <div class="motion-direction-label"><span class="motion-mini-label">Direction</span><small id="directionHint">Orientation only</small></div>
+              <div class="segmented compact-direction" id="directionGroup">
+                <button class="segment" data-value="left" title="From left">←</button>
+                <button class="segment active" data-value="up" title="From bottom">↑</button>
+                <button class="segment" data-value="right" title="From right">→</button>
+                <button class="segment" data-value="down" title="From top">↓</button>
+                <button class="segment" data-value="auto" title="Auto">A</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="motion-polish-row">
+          <label class="motion-mini-toggle"><input type="checkbox" id="transformMix" checked /><span></span><b>Transform Mix</b></label>
+          <label class="motion-mini-toggle"><input type="checkbox" id="expressionPolish" checked /><span></span><b>UI Settle</b></label>
+          <label class="motion-mini-toggle"><input type="checkbox" id="motionBlur" checked /><span></span><b>Motion Blur</b></label>
+        </div>
+
+        <div class="shax-mix-toolbar">
+          <button type="button" class="secondary-button shax-mix-save" id="saveMotionMix" title="Save these settings for other projects">Save as My Mix</button>
+          <button type="button" class="secondary-button shax-mix-delete" id="deleteMotionMix" hidden>Delete Mix</button>
+        </div>
+        <div class="shax-mix-form" id="motionMixSaveForm" hidden>
+          <label for="motionMixName">Name this motion</label>
+          <div class="shax-mix-form-actions">
+            <input id="motionMixName" type="text" maxlength="48" placeholder="e.g. Smooth Product Reveal" autocomplete="off" />
+            <button type="button" id="confirmMotionMix" class="primary-button">Save</button>
+            <button type="button" id="cancelMotionMix" class="secondary-button">Cancel</button>
+          </div>
+        </div>
+        <button class="primary-button motion-apply-button" id="generateMotion"><span>▶</span> APPLY MOTION</button>
+        <div class="motion-inspector-foot"><span>Double-click a preset to apply instantly.</span><b id="motionPresetEngine">Smooth UI</b></div>
+      </section>
+    </section>
+
+    <section class="panel-page" id="sequence">
+      <section class="card sequence-selection-card">
+        <div class="section-heading">
+          <div>
+            <h2>Sequence Layers</h2>
+          </div>
+          <div class="count" id="sequenceLayerCount">0</div>
+        </div>
+
+        <div class="sequence-empty" id="sequenceEmpty">
+          <div class="selection-icon">☷</div>
+          <strong>Select animated layers</strong>
+          <span>Place the playhead at the start of the motion block.</span>
+        </div>
+
+        <div class="sequence-layer-list" id="sequenceLayerList" hidden></div>
+        <button class="secondary-button" id="sequenceRefresh">↻ Refresh Layers</button>
+      </section>
+
+      <section class="card sequence-controls-card">
+        <label class="field-label" for="sequenceOrder">Order</label>
+        <div class="select-wrap">
+          <select id="sequenceOrder">
+            <option value="smart">Smart Layout</option>
+            <option value="top">Top → Bottom</option>
+            <option value="bottom">Bottom → Top</option>
+            <option value="stack">Layer Stack</option>
+            <option value="custom">Custom Order</option>
+          </select>
+        </div>
+        <p class="field-help">Smart Layout follows the visual reading order of the composition.</p>
+
+        <label class="toggle-row sequence-toggle">
+          <input type="checkbox" id="sequenceReverse" />
+          <span class="toggle-ui"></span>
+          <span><strong>Reverse Order</strong><small>Flip the resolved sequence</small></span>
+        </label>
+
+        <label class="field-label" for="sequenceGap">Minimum Gap</label>
+        <div class="input-with-suffix">
+          <input id="sequenceGap" type="number" min="0" max="2" step="0.01" value="0.04" />
+          <span>seconds</span>
+        </div>
+
+        <div class="slider-block">
+          <div class="slider-top"><span>Overlap</span><output id="sequenceOverlapValue">72%</output></div>
+          <input type="range" id="sequenceOverlap" min="0" max="95" value="72" />
+          <p class="field-help sequence-help">Higher overlap creates a tighter, more connected flow.</p>
+        </div>
+
+        <div class="slider-block">
+          <div class="slider-top"><span>Natural Offset</span><output id="sequenceNaturalValue">0%</output></div>
+          <input type="range" id="sequenceNatural" min="0" max="20" value="0" />
+          <p class="field-help sequence-help">Adds a tiny controlled timing variation, never full random timing.</p>
+        </div>
+
+        <button class="primary-button" id="applySequence">
+          <span>☷</span> APPLY SEQUENCE
+        </button>
+        <p class="build-note">Retimes the first transform-animation block after the playhead while preserving its internal keyframe spacing.</p>
+      </section>
+    </section>
+
+    <section class="panel-page" id="resize">
+      <section class="card resize-current-card">
+        <div class="section-heading">
+          <div>
+            <h2>Recompose Canvas</h2>
+          </div>
+          <div class="ratio-badge" id="currentRatio">—</div>
+        </div>
+
+        <div class="active-comp-name" id="activeCompCard">
+          <span>Composition</span>
+          <strong id="currentCompName">No composition selected</strong>
+        </div>
+
+        <div class="comp-metrics">
+          <div><span>Current</span><strong id="currentSize">—</strong></div>
+          <div><span>Layers</span><strong id="currentLayerTotal">—</strong></div>
+          <div><span>Selected</span><strong id="currentSelectedTotal">—</strong></div>
+        </div>
+        <button class="secondary-button" id="resizeRefresh">↻ Refresh Composition</button>
+      </section>
+
+      <section class="card resize-controls-card">
+        <div class="field-label">Target Format</div>
+        <div class="format-grid" id="formatGrid">
+          <button class="format-preset active" data-width="1080" data-height="1920" data-ratio="9:16"><strong>9:16</strong><small>1080 × 1920</small></button>
+          <button class="format-preset" data-width="1080" data-height="1080" data-ratio="1:1"><strong>1:1</strong><small>1080 × 1080</small></button>
+          <button class="format-preset" data-width="1080" data-height="1350" data-ratio="4:5"><strong>4:5</strong><small>1080 × 1350</small></button>
+          <button class="format-preset" data-width="1920" data-height="1080" data-ratio="16:9"><strong>16:9</strong><small>1920 × 1080</small></button>
+        </div>
+
+        <div class="custom-size-row">
+          <label><span>Width</span><input id="resizeWidth" type="number" min="16" max="30000" step="1" value="1080" /></label>
+          <div class="size-cross">×</div>
+          <label><span>Height</span><input id="resizeHeight" type="number" min="16" max="30000" step="1" value="1920" /></label>
+        </div>
+
+        <label class="field-label" for="resizeMode">Layout Mode</label>
+        <div class="select-wrap">
+          <select id="resizeMode">
+            <option value="deep" selected>Deep Chain Fit · No Double Scale</option>
+            <option value="smartflow">Smart Reflow · Legacy</option>
+            <option value="fitcenter">Fit + Center · Legacy</option>
+            <option value="center">Keep Center Distance</option>
+            <option value="proportional">Scale Layout</option>
+          </select>
+        </div>
+        <p class="field-help" id="resizeModeHelp">Deep Chain Fit follows the dominant nested precomp chain, fits the real design only once, then centers each parent canvas without scaling the design again.</p>
+
+        <label class="field-label" for="resizeScope">Layers</label>
+        <div class="select-wrap">
+          <select id="resizeScope">
+            <option value="all">All eligible layers</option>
+            <option value="selected">Selected layers only</option>
+          </select>
+        </div>
+
+        <div class="resize-toggle-grid">
+          <label class="toggle-row">
+            <input type="checkbox" id="resizeDuplicate" checked />
+            <span class="toggle-ui"></span>
+            <span><strong>Duplicate First</strong><small>Keep the original composition untouched</small></span>
+          </label>
+          <label class="toggle-row">
+            <input type="checkbox" id="resizePreserveMotion" checked />
+            <span class="toggle-ui"></span>
+            <span><strong>Preserve Motion</strong><small>Shift existing motion paths with the new layout</small></span>
+          </label>
+          <label class="toggle-row">
+            <input type="checkbox" id="resizeSafeArea" checked />
+            <span class="toggle-ui"></span>
+            <span><strong>Safe Margins</strong><small>Keep layer anchors away from canvas edges</small></span>
+          </label>
+          <label class="toggle-row">
+            <input type="checkbox" id="resizeAdaptiveScale" />
+            <span class="toggle-ui"></span>
+            <span><strong>Adaptive Scale</strong><small>Allow a small controlled enlargement after deep fitting</small></span>
+          </label>
+        </div>
+
+        <button class="primary-button" id="applyResize">
+          <span>⌗</span> RECOMPOSE
+        </button>
+        <p class="build-note">Deep Chain Fit scans the nested precomp chain, fits the real design once, then recenters parent canvases without repeated scaling.</p>
+      </section>
+    </section>
+
+
+    <section class="panel-page align-page" id="align">
+      <section class="card align-selection-card">
+        <div class="section-heading">
+          <div>
+            <h2>Alignment Studio</h2>
+          </div>
+          <div class="count" id="alignLayerCount">0</div>
+        </div>
+
+        <div class="selection-empty align-empty" id="alignEmpty">
+          <div class="selection-icon">⊞</div>
+          <strong>Select 2 or more layers</strong>
+          <span>Visual bounds are used, like Illustrator alignment.</span>
+        </div>
+        <div class="align-layer-list" id="alignLayerList" hidden></div>
+        <button class="secondary-button" id="alignRefresh">↻ Refresh Selection</button>
+      </section>
+
+      <section class="card align-controls-card">
+        <div class="align-control-head">
+          <div>
+            <h3>Align & Distribute</h3>
+          </div>
+          <div class="align-live"><i></i> LIVE BOUNDS</div>
+        </div>
+
+        <label class="field-label" for="alignTo">Align To</label>
+        <div class="select-wrap">
+          <select id="alignTo">
+            <option value="selection">Selection</option>
+            <option value="composition">Composition</option>
+            <option value="key">Key Object</option>
+          </select>
+        </div>
+        <p class="field-help">Selection matches Illustrator selection bounds. Composition acts like Align to Artboard.</p>
+
+        <div class="key-object-wrap" id="keyObjectWrap" hidden>
+          <label class="field-label" for="alignKeyLayer">Key Object</label>
+          <div class="select-wrap">
+            <select id="alignKeyLayer"><option value="">Choose selected layer</option></select>
+          </div>
+        </div>
+
+        <div class="align-section-title"><span>ALIGN OBJECTS</span><i></i></div>
+        <div class="align-tool-grid" id="alignTools">
+          <button class="align-tool magnetic" data-align-action="left" title="Horizontal Align Left">
+            <span class="align-icon ai-left"><i></i><b></b><em></em></span><small>Left</small>
+          </button>
+          <button class="align-tool magnetic" data-align-action="hcenter" title="Horizontal Align Center">
+            <span class="align-icon ai-hcenter"><i></i><b></b><em></em></span><small>Center</small>
+          </button>
+          <button class="align-tool magnetic" data-align-action="right" title="Horizontal Align Right">
+            <span class="align-icon ai-right"><i></i><b></b><em></em></span><small>Right</small>
+          </button>
+          <button class="align-tool magnetic" data-align-action="top" title="Vertical Align Top">
+            <span class="align-icon ai-top"><i></i><b></b><em></em></span><small>Top</small>
+          </button>
+          <button class="align-tool magnetic" data-align-action="vcenter" title="Vertical Align Center">
+            <span class="align-icon ai-vcenter"><i></i><b></b><em></em></span><small>Middle</small>
+          </button>
+          <button class="align-tool magnetic" data-align-action="bottom" title="Vertical Align Bottom">
+            <span class="align-icon ai-bottom"><i></i><b></b><em></em></span><small>Bottom</small>
+          </button>
+        </div>
+
+        <div class="align-section-title anchor-title"><span>ANCHOR POINT</span><i></i></div>
+        <div class="anchor-studio">
+          <div class="anchor-visual" aria-hidden="true">
+            <div class="anchor-visual-layer">
+              <span class="anchor-visual-cross"></span>
+              <i></i><i></i><i></i><i></i>
+            </div>
+            <small>VISIBLE BOUNDS</small>
+          </div>
+          <div class="anchor-controls">
+            <div class="anchor-point-grid" id="anchorTools" aria-label="Anchor point positions">
+              <button class="anchor-point-tool magnetic" data-anchor-action="top-left" title="Anchor Top Left"><span></span></button>
+              <button class="anchor-point-tool magnetic" data-anchor-action="top-center" title="Anchor Top Center"><span></span></button>
+              <button class="anchor-point-tool magnetic" data-anchor-action="top-right" title="Anchor Top Right"><span></span></button>
+              <button class="anchor-point-tool magnetic" data-anchor-action="middle-left" title="Anchor Middle Left"><span></span></button>
+              <button class="anchor-point-tool magnetic anchor-center" data-anchor-action="center" title="Anchor Center"><span></span></button>
+              <button class="anchor-point-tool magnetic" data-anchor-action="middle-right" title="Anchor Middle Right"><span></span></button>
+              <button class="anchor-point-tool magnetic" data-anchor-action="bottom-left" title="Anchor Bottom Left"><span></span></button>
+              <button class="anchor-point-tool magnetic" data-anchor-action="bottom-center" title="Anchor Bottom Center"><span></span></button>
+              <button class="anchor-point-tool magnetic" data-anchor-action="bottom-right" title="Anchor Bottom Right"><span></span></button>
+            </div>
+            <label class="toggle-row anchor-keep-toggle">
+              <input type="checkbox" id="anchorKeepPosition" checked />
+              <span class="toggle-ui"></span>
+              <span><strong>Keep Layer In Place</strong><small>Move the anchor without visually moving the layer</small></span>
+            </label>
+          </div>
+        </div>
+        <p class="field-help anchor-help">Each selected layer gets its own anchor from its visible bounds. Preserve Motion below also shifts the full Position animation.</p>
+
+        <div class="align-section-title distribute-title"><span>DISTRIBUTE OBJECTS</span><i></i></div>
+        <div class="distribute-grid">
+          <button class="distribution-tool" data-distribute-action="h-left" title="Horizontal Distribute Left Edges"><span>⇤</span><small>Left edges</small></button>
+          <button class="distribution-tool" data-distribute-action="h-center" title="Horizontal Distribute Centers"><span>↔</span><small>H centers</small></button>
+          <button class="distribution-tool" data-distribute-action="h-right" title="Horizontal Distribute Right Edges"><span>⇥</span><small>Right edges</small></button>
+          <button class="distribution-tool" data-distribute-action="v-top" title="Vertical Distribute Top Edges"><span>⇡</span><small>Top edges</small></button>
+          <button class="distribution-tool" data-distribute-action="v-center" title="Vertical Distribute Centers"><span>↕</span><small>V centers</small></button>
+          <button class="distribution-tool" data-distribute-action="v-bottom" title="Vertical Distribute Bottom Edges"><span>⇣</span><small>Bottom edges</small></button>
+        </div>
+
+        <div class="align-section-title spacing-title"><span>DISTRIBUTE SPACING</span><i></i></div>
+        <div class="spacing-row">
+          <div class="input-with-suffix spacing-input"><input id="alignSpacing" type="number" min="-5000" max="5000" step="1" value="24" /><span>px</span></div>
+          <button class="spacing-button magnetic" data-spacing-axis="horizontal" title="Horizontal Distribute Spacing"><span>↔</span> Horizontal</button>
+          <button class="spacing-button magnetic" data-spacing-axis="vertical" title="Vertical Distribute Spacing"><span>↕</span> Vertical</button>
+        </div>
+
+        <label class="toggle-row align-preserve-toggle">
+          <input type="checkbox" id="alignPreserveMotion" checked />
+          <span class="toggle-ui"></span>
+          <span><strong>Preserve Motion</strong><small>Shift the entire Position animation instead of only this frame</small></span>
+        </label>
+
+        <p class="build-note">Uses visible layer bounds, not anchor points. Key Object stays fixed while other layers align to it.</p>
+      </section>
+    </section>
+
+
+    <section class="panel-page organize-page" id="organize">
+      <section class="card organizer-scan-card">
+        <div class="section-heading">
+          <div>
+            <h2>Project Organizer</h2>
+          </div>
+          <div class="organizer-safe-badge"><i></i> SAFE</div>
+        </div>
+
+        <div class="organizer-project-card">
+          <span>Current Project</span>
+          <strong id="organizerProjectName">Not scanned</strong>
+          <small><b id="organizerTotalCount">0</b> project items detected</small>
+        </div>
+
+        <div class="organizer-count-grid">
+          <div><span>Comps</span><strong id="orgMainCount">0</strong></div>
+          <div><span>Precomps</span><strong id="orgPrecompCount">0</strong></div>
+          <div><span>Images</span><strong id="orgImageCount">0</strong></div>
+          <div><span>Video</span><strong id="orgVideoCount">0</strong></div>
+          <div><span>Audio</span><strong id="orgAudioCount">0</strong></div>
+          <div><span>Design</span><strong id="orgDesignCount">0</strong></div>
+          <div><span>Solids</span><strong id="orgSolidCount">0</strong></div>
+          <div><span>Data</span><strong id="orgDataCount">0</strong></div>
+          <div><span>Other</span><strong id="orgOtherCount">0</strong></div>
+        </div>
+
+        <button class="secondary-button" id="scanProject">↻ Scan Project</button>
+      </section>
+
+      <section class="card organizer-controls-card">
+        <div class="organizer-control-head">
+          <div>
+            <h3>Clean Project Panel</h3>
+          </div>
+        </div>
+
+        <label class="field-label" for="organizeScope">Organize Scope</label>
+        <div class="select-wrap">
+          <select id="organizeScope">
+            <option value="root" selected>Loose Root Items · Safe</option>
+            <option value="all">Entire Project · Deep</option>
+          </select>
+        </div>
+        <p class="field-help">Safe mode only moves loose root items. Deep mode also collects assets already inside your own folders.</p>
+
+        <div class="organizer-tree">
+          <div class="tree-root"><span>▾</span><strong>PROJECT</strong></div>
+          <div class="tree-branch"><i></i><span>01_COMPS</span><b>MAIN · PRECOMPS</b></div>
+          <div class="tree-branch"><i></i><span>02_MEDIA</span><b>IMAGES · VIDEO · AUDIO</b></div>
+          <div class="tree-branch"><i></i><span>03_DESIGN</span><b>AI · PSD · EPS</b></div>
+          <div class="tree-branch"><i></i><span>04_SOLIDS</span><b>GENERATED SOLIDS</b></div>
+          <div class="tree-branch"><i></i><span>05_DATA</span><b>JSON · CSV · TSV</b></div>
+          <div class="tree-branch"><i></i><span>99_OTHER</span><b>EVERYTHING ELSE</b></div>
+        </div>
+
+        <label class="toggle-row organizer-toggle">
+          <input type="checkbox" id="organizeSplitComps" checked />
+          <span class="toggle-ui"></span>
+          <span><strong>Separate Main & Precomps</strong><small>Detect comps used inside other comps automatically</small></span>
+        </label>
+
+        <button class="primary-button organizer-primary" id="organizeProject">
+          <span>▦</span> ORGANIZE PROJECT
+        </button>
+
+        <div class="organizer-divider"><span>ACTIVE COMP LAYERS</span></div>
+
+        <div class="layer-organizer-options">
+          <label class="toggle-row">
+            <input type="checkbox" id="organizeLayerLabels" checked />
+            <span class="toggle-ui"></span>
+            <span><strong>Labels by Type</strong><small>Give text, shapes, precomps, images and audio consistent labels</small></span>
+          </label>
+          <label class="toggle-row">
+            <input type="checkbox" id="organizeLayerPrefixes" />
+            <span class="toggle-ui"></span>
+            <span><strong>Add Type Prefix</strong><small>Optional names like [TXT], [IMG], [PRE] without reordering layers</small></span>
+          </label>
+        </div>
+
+        <button class="secondary-button organizer-layer-button" id="organizeLayers">✦ Organize Active Comp Layers</button>
+        <p class="build-note">Project organization only changes Project Panel folders. Layer organization never changes stacking order, timing, effects or expressions.</p>
+      </section>
+    </section>
+
+
+    <section class="panel-page vault-page" id="vault">
+      <section class="card vault-capture-card">
+        <div class="section-heading">
+          <div>
+            <h2>Asset Vault</h2>
+          </div>
+          <div class="vault-sync-badge"><i></i> LOCAL</div>
+        </div>
+
+        <div class="vault-intro asset-vault-intro">
+          <div>
+            <strong>Save the animation and everything it needs.</strong>
+            <small>Stores a reusable AE composition with nested comps, artwork, footage, audio and a visual preview.</small>
+          </div>
+        </div>
+
+        <div class="field-label">Save Source</div>
+        <div class="vault-source-switch" id="vaultSourceSwitch">
+          <button type="button" class="vault-source-option active" data-vault-source="comp">
+            <strong>Active Comp</strong><small>Save the whole active composition</small>
+          </button>
+          <button type="button" class="vault-source-option" data-vault-source="selection">
+            <strong>Selected Layers</strong><small>Auto-precomp the selected character / object</small>
+          </button>
+        </div>
+
+        <div class="vault-selection-strip asset-source-strip">
+          <span id="vaultSourceLabel">Active composition</span>
+          <strong id="vaultSelectionCount">0</strong>
+          <button class="mini-action" id="vaultRefreshSelection" title="Refresh source">↻</button>
+        </div>
+
+        <label class="field-label" for="vaultPresetName">Asset Name</label>
+        <input class="rk-text-input" id="vaultPresetName" type="text" maxlength="64" placeholder="Walking Character" />
+
+        <div class="vault-two-col">
+          <div>
+            <label class="field-label" for="vaultCategory">Category</label>
+            <div class="select-wrap">
+              <select id="vaultCategory">
+                <option value="Character" selected>Character</option>
+                <option value="Scene">Scene</option>
+                <option value="UI">UI</option>
+                <option value="Logo">Logo</option>
+                <option value="Transition">Transition</option>
+                <option value="Social">Social</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label class="field-label">Preview Frame</label>
+            <div class="vault-preview-frame-note">Animated preview · auto sampled</div>
+          </div>
+        </div>
+
+        <div class="vault-toggle-grid">
+          <label class="toggle-row">
+            <input type="checkbox" id="vaultPackResources" checked />
+            <span class="toggle-ui"></span>
+            <span><strong>Pack Resources</strong><small>Copy linked images, AI/PSD, video and audio into the vault pack</small></span>
+          </label>
+          <label class="toggle-row">
+            <input type="checkbox" id="vaultOpenAfterApply" checked />
+            <span class="toggle-ui"></span>
+            <span><strong>Insert on Apply</strong><small>Add the saved composition to the active comp at the playhead</small></span>
+          </label>
+        </div>
+
+        <button class="primary-button vault-save-button" id="vaultSaveMotion"><span>◇</span> SAVE ASSET PACK</button>
+        <p class="build-note">No manual pre-save needed. If the project is new, SHAX opens the Save Project dialog once, then packages the asset and returns to your original project automatically.</p>
+      </section>
+
+      <section class="card vault-library-card">
+        <div class="vault-library-head">
+          <div>
+            <h3>Saved Animations</h3>
+          </div>
+          <div class="count" id="vaultPresetCount">0</div>
+        </div>
+
+        <div class="vault-search-row">
+          <input class="rk-text-input" id="vaultSearch" type="text" placeholder="Search characters, scenes, UI…" />
+          <button class="mini-action" id="vaultReload" title="Reload library">↻</button>
+        </div>
+
+        <div class="vault-library-tools">
+          <span>Hover or click a thumbnail, or press PREVIEW, to play the animation directly inside its Vault card.</span>
+          <button class="secondary-button compact" id="vaultClearPreview">Stop All</button>
+        </div>
+
+        <div class="vault-list asset-vault-list" id="vaultList">
+          <div class="vault-empty">
+            <div>◆</div>
+            <strong>No saved assets yet</strong>
+            <span>Animate a character, object or composition, then save it as an Asset Pack.</span>
+          </div>
+        </div>
+
+        <p class="build-note">PREVIEW stays inside SHAX and expands the card for playback. APPLY imports the saved asset and can insert it at the playhead.</p>
+      </section>
+    </section>
+
+    <section class="panel-page brand-page" id="brand">
+      <section class="card brand-library-card">
+        <div class="section-heading">
+          <div>
+            <h2>Brand Kits</h2>
+          </div>
+        </div>
+
+        <div class="brand-kit-toolbar">
+          <div class="select-wrap brand-kit-select-wrap">
+            <select id="brandKitSelect" aria-label="Saved brand kits"></select>
+          </div>
+          <button class="mini-action" id="newBrandKit" title="New brand kit">＋</button>
+          <button class="mini-action danger" id="deleteBrandKit" title="Delete brand kit">⌫</button>
+        </div>
+        <p class="field-help brand-library-help">One kit can carry your palette, logo, type and motion signature into any composition.</p>
+      </section>
+
+      <section class="card brand-editor-card">
+        <div class="brand-editor-head">
+          <div>
+            <h3>Brand Core</h3>
+          </div>
+        </div>
+
+        <label class="field-label" for="brandName">Brand Name</label>
+        <input class="rk-text-input" id="brandName" type="text" maxlength="48" placeholder="My Brand" />
+
+        <div class="brand-subhead">
+          <div><strong>Logo Asset</strong></div>
+          <small>Reusable in every comp</small>
+        </div>
+        <div class="logo-asset-box">
+          <div class="logo-preview" id="logoPreview">R</div>
+          <div class="logo-meta">
+            <strong id="logoFileName">No logo selected</strong>
+            <span id="logoPathLabel">Choose PNG, AI, PSD or supported footage.</span>
+          </div>
+          <button class="asset-button" id="chooseLogo">Choose</button>
+        </div>
+        <div class="brand-inline-controls">
+          <div class="select-wrap">
+            <select id="logoPlacement">
+              <option value="top-left">Top Left</option>
+              <option value="top-right" selected>Top Right</option>
+              <option value="bottom-left">Bottom Left</option>
+              <option value="bottom-right">Bottom Right</option>
+              <option value="center">Center</option>
+            </select>
+          </div>
+          <div class="input-with-suffix logo-size-input"><input id="logoSize" type="number" min="4" max="40" step="1" value="14" /><span>% width</span></div>
+          <button class="secondary-button compact-secondary" id="placeLogo">Place Logo</button>
+        </div>
+
+        <div class="brand-subhead palette-heading">
+          <div><strong>Palette</strong></div>
+          <button class="ghost-link" id="captureBrandStyle">Capture Selection</button>
+        </div>
+        <div class="palette-grid">
+          <div class="palette-card" data-slot="primary">
+            <div class="palette-top"><span>Primary</span><input type="color" id="brandPrimaryColor" value="#5C8DFF" /></div>
+            <input class="hex-input" id="brandPrimary" value="#5C8DFF" maxlength="7" />
+            <button class="palette-apply" data-brand-color="primary">Apply</button>
+          </div>
+          <div class="palette-card" data-slot="secondary">
+            <div class="palette-top"><span>Secondary</span><input type="color" id="brandSecondaryColor" value="#7C5CFF" /></div>
+            <input class="hex-input" id="brandSecondary" value="#7C5CFF" maxlength="7" />
+            <button class="palette-apply" data-brand-color="secondary">Apply</button>
+          </div>
+          <div class="palette-card" data-slot="accent">
+            <div class="palette-top"><span>Accent</span><input type="color" id="brandAccentColor" value="#0FC8A8" /></div>
+            <input class="hex-input" id="brandAccent" value="#0FC8A8" maxlength="7" />
+            <button class="palette-apply" data-brand-color="accent">Apply</button>
+          </div>
+        </div>
+
+        <div class="brand-subhead">
+          <div><strong>Typography</strong></div>
+          <small>Selected text layers</small>
+        </div>
+        <div class="type-row">
+          <input class="rk-text-input" id="brandFont" type="text" placeholder="PostScript font name" />
+          <button class="secondary-button compact-secondary" id="captureFont">Capture</button>
+          <button class="secondary-button compact-secondary" id="applyFont">Apply</button>
+        </div>
+
+        <div class="brand-subhead motion-signature-heading">
+          <div><strong>Motion Signature</strong></div>
+          <small>Push directly to Animate</small>
+        </div>
+        <div class="brand-motion-grid">
+          <div>
+            <label class="field-label" for="brandMotionStyle">Character</label>
+            <div class="select-wrap">
+              <select id="brandMotionStyle">
+                <option value="smooth">Smooth UI</option>
+                <option value="clean">Clean Interface</option>
+                <option value="snappy">Snappy UI</option>
+                <option value="soft">Soft Float</option>
+                <option value="cinematic">Cinematic UI</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label class="field-label" for="brandDuration">Duration</label>
+            <div class="input-with-suffix"><input id="brandDuration" type="number" min="0.2" max="5" step="0.1" value="0.9" /><span>sec</span></div>
+          </div>
+        </div>
+        <div class="motion-signature-sliders">
+          <div class="slider-block">
+            <div class="slider-top"><span>Energy</span><output id="brandEnergyValue">55%</output></div>
+            <input type="range" id="brandEnergy" min="0" max="100" value="55" />
+          </div>
+          <div class="slider-block">
+            <div class="slider-top"><span>Stagger</span><output id="brandStaggerValue">25%</output></div>
+            <input type="range" id="brandStagger" min="0" max="100" value="25" />
+          </div>
+        </div>
+        <button class="signature-button" id="sendBrandMotion"><span>↗</span> USE IN ANIMATE</button>
+
+        <div class="brand-save-row">
+          <button class="primary-button" id="saveBrandKit"><span>✦</span> SAVE BRAND KIT</button>
+        </div>
+        <p class="build-note">Brand Kits are stored locally on this computer. Apply palette and typography only to the layers you select.</p>
+      </section>
+    </section>
+
+      </div>
+    </div>
+
+    <section class="shax-help-panel" id="shaxHelpPanel" hidden aria-label="SHAX help">
+      <div class="shax-help-heading"><strong>SHAX · Workflow Toolkit</strong><button type="button" id="shaxHelpClose" aria-label="Close help">×</button></div>
+      <p>Select a composition and layers in After Effects, then choose a tool.</p>
+      <div class="shax-help-entry"><span>Find animations</span><kbd>/</kbd></div>
+      <div class="shax-help-entry"><span>Close help / search</span><kbd>Esc</kbd></div>
+      <div class="shax-help-entry"><span>Full animation assets</span><b>Vault</b></div>
+      <div class="shax-help-entry"><span>Custom motion settings</span><b>My Mixes</b></div>
+      <small>SHAX 3.3.1 · Unsigned CEP panel · Local data is stored on this device.</small>
+    </section>
+    <footer class="statusbar">
+      <span class="status-dot" id="statusDot"></span>
+      <span id="statusText">Connecting to After Effects…</span>
+      <span class="version">v3.3.1</span>
+    </footer>
+  </main>
+
+  <script src="./js/app.js"></script>
+</body>
+</html>

@@ -4993,4 +4993,27 @@ function shax_clearAssetPreview() {
         return "OK";
     } catch (e) {
         return "ERROR~~RK_FIELD~~" + shax_assetField(e.toString());
+    }}
+
+function shax_assetDeleteFolderRecursive(folder) {
+    if (!(folder && folder.exists)) return true;
+    var entries = folder.getFiles();
+    for (var i = 0; i < entries.length; i++) {
+        try {
+            if (entries[i] instanceof Folder) shax_assetDeleteFolderRecursive(entries[i]);
+            else entries[i].remove();
+        } catch (e) {}
     }
+    try { return folder.remove(); } catch (removeError) { return false; }
+}
+
+function shax_deleteAssetPack(id) {
+    var data = shax_assetMetaById(id);
+    if (!data) return "PACK_NOT_FOUND";
+    try {
+        if (String(SHAX_ASSET_PREVIEW_PACK_ID) === String(id)) shax_assetClearPreviewInternal(true);
+        return shax_assetDeleteFolderRecursive(data._folder) ? "OK" : "ERROR~~RK_FIELD~~Could not delete Asset Vault folder";
+    } catch (e) {
+        return "ERROR~~RK_FIELD~~" + shax_assetField(e.toString());
+    }
+}

@@ -1,0 +1,33 @@
+# System and editor files
+.DS_Store
+Thumbs.db
+Desktop.ini
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Local/private data: never commit user assets or export packs
+*.aep
+*.aepx
+*.aep.bak
+*.ffx
+*.mov
+*.mp4
+*.wav
+*.psd
+*.ai
+*.zip
+.env
+.env.*
+private/
+user-data/
+local-cache/
+preview-cache/
+vault-packs/
+
+# Packaging
+build/
+dist/
+release/
+node_modules/

@@ -997,7 +997,8 @@ function roobKudhabe_shiftLayerPosition(layer, dx, dy) {
         if (position.dimensionsSeparated) {
             var xProp = position.getSeparationFollower(0);
             var yProp = position.getSeparationFollower(1);
-            var okX = roobKudhabe_shiftScalarProperty(xProp, dx);            var okY = roobKudhabe_shiftScalarProperty(yProp, dy);
+            var okX = roobKudhabe_shiftScalarProperty(xProp, dx);
+            var okY = roobKudhabe_shiftScalarProperty(yProp, dy);
             return okX || okY;
         }
         if (position.numKeys > 0) {
@@ -1996,7 +1997,8 @@ function roobKudhabe_v10_shouldFollowPrecomp(parentComp, layer, referenceTime) {
 function roobKudhabe_v10_remapPrecompAnchor(layer, oldW, oldH, newW, newH) {
     if (!layer || oldW <= 0 || oldH <= 0) return;
     var transform = null;
-    var anchor = null;    try {
+    var anchor = null;
+    try {
         transform = layer.property("ADBE Transform Group");
         anchor = transform ? transform.property("ADBE Anchor Point") : null;
     } catch (e) {}
@@ -2995,7 +2997,8 @@ function roobKudhabe_v13_visualBounds(layer, time) {
             if (p[1] > maxY) maxY = p[1];
         }
         return {
-            minX: minX,            minY: minY,
+            minX: minX,
+            minY: minY,
             maxX: maxX,
             maxY: maxY,
             width: Math.max(0, maxX - minX),
@@ -3995,6 +3998,7 @@ function roobKudhabe_v16_propertyMode(prop, reference) {
     }
     return "delta";
 }
+
 function roobKudhabe_v16_captureProperty(prop, globalStart, anchorMode, includeExpressions) {
     if (!prop || prop.numKeys < 1) return null;
     var refIndex = anchorMode === "start" ? 1 : prop.numKeys;
@@ -4993,7 +4997,8 @@ function shax_clearAssetPreview() {
         return "OK";
     } catch (e) {
         return "ERROR~~RK_FIELD~~" + shax_assetField(e.toString());
-    }}
+    }
+}
 
 function shax_assetDeleteFolderRecursive(folder) {
     if (!(folder && folder.exists)) return true;

@@ -997,6 +997,7 @@
     qs("#resizeHeight").value = button.getAttribute("data-height");
     state.resizeRatio = button.getAttribute("data-ratio") || "custom";
   }
+
   function clearFormatPreset() {
     qsa(".format-preset").forEach(function (item) { item.classList.remove("active"); });
     state.resizeRatio = "custom";
@@ -1996,7 +1997,8 @@
   });
 
   qs("#brandKitSelect").addEventListener("change", function () {
-    var kits = loadBrandKits();    state.activeBrandId = this.value;
+    var kits = loadBrandKits();
+    state.activeBrandId = this.value;
     populateBrandEditor(currentBrandKit(kits));
     setStatus("Loaded brand kit · " + qs("#brandName").value, "ok");
   });

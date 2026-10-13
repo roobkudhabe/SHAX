@@ -11,17 +11,17 @@ Unicode true
 !define UNINSTALL_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\SHAX"
 
 Name "${PRODUCT_NAME} ${PRODUCT_VERSION}"
-OutFile "dist\SHAX-Setup-v3.4.0.exe"
+OutFile "${__FILEDIR__}\..\..\dist\SHAX-Setup-v3.4.0.exe"
 InstallDir "$APPDATA\Adobe\CEP\extensions\com.shax.panel"
 RequestExecutionLevel user
 SetCompressor /SOLID lzma
 ShowInstDetails show
 BrandingText "SHAX | After Effects Motion Toolkit"
 
-!define MUI_ICON "packaging\windows\assets\shax.ico"
-!define MUI_UNICON "packaging\windows\assets\shax.ico"
-!define MUI_WELCOMEFINISHPAGE_BITMAP "packaging\windows\assets\welcome.bmp"
-!define MUI_UNWELCOMEFINISHPAGE_BITMAP "packaging\windows\assets\welcome.bmp"
+!define MUI_ICON "${__FILEDIR__}\assets\shax.ico"
+!define MUI_UNICON "${__FILEDIR__}\assets\shax.ico"
+!define MUI_WELCOMEFINISHPAGE_BITMAP "${__FILEDIR__}\assets\welcome.bmp"
+!define MUI_UNWELCOMEFINISHPAGE_BITMAP "${__FILEDIR__}\assets\welcome.bmp"
 !define MUI_ABORTWARNING
 
 !insertmacro MUI_PAGE_WELCOME
@@ -41,15 +41,15 @@ Section "Install SHAX" SEC_INSTALL
   SetShellVarContext current
   SetOverwrite on
   SetOutPath "$INSTDIR"
-  File "index.html"
+  File "${__FILEDIR__}\..\..\index.html"
   SetOutPath "$INSTDIR\CSXS"
-  File "CSXS\manifest.xml"
+  File "${__FILEDIR__}\..\..\CSXS\manifest.xml"
   SetOutPath "$INSTDIR\css"
-  File "css\style.css"
+  File "${__FILEDIR__}\..\..\css\style.css"
   SetOutPath "$INSTDIR\js"
-  File "js\app.js"
+  File "${__FILEDIR__}\..\..\js\app.js"
   SetOutPath "$INSTDIR\jsx"
-  File "jsx\host.jsx"
+  File "${__FILEDIR__}\..\..\jsx\host.jsx"
 
   ; Unsigned CEP panels require per-user development-mode registration.
   WriteRegStr HKCU "Software\Adobe\CSXS.9" "PlayerDebugMode" "1"

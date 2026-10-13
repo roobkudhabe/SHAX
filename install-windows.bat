@@ -26,7 +26,7 @@ for %%V in (9 10 11 12 13) do (
     reg add "HKCU\Software\Adobe\CSXS.%%V" /v PlayerDebugMode /t REG_SZ /d 1 /f >nul 2>&1
 )
 echo.
-echo SHAX v3.3.1 installed. Restart After Effects and open Window ^> Extensions ^(Legacy^) ^> SHAX.
+echo SHAX v3.4.0 installed. Restart After Effects and open Window ^> Extensions ^(Legacy^) ^> SHAX.
 pause
 exit /b 0
 

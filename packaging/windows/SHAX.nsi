@@ -1,8 +1,6 @@
 ; SHAX v3.4.0 | User-level, no-admin CEP installer for Windows.
 ; Compile from repository root: makensis packaging/windows/SHAX.nsi
 
-!cd "${__FILEDIR__}\..\.."
-
 Unicode true
 !include "MUI2.nsh"
 
@@ -11,17 +9,17 @@ Unicode true
 !define UNINSTALL_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\SHAX"
 
 Name "${PRODUCT_NAME} ${PRODUCT_VERSION}"
-OutFile "${__FILEDIR__}\..\..\dist\SHAX-Setup-v3.4.0.exe"
+OutFile "..\..\dist\SHAX-Setup-v3.4.0.exe"
 InstallDir "$APPDATA\Adobe\CEP\extensions\com.shax.panel"
 RequestExecutionLevel user
 SetCompressor /SOLID lzma
 ShowInstDetails show
 BrandingText "SHAX | After Effects Motion Toolkit"
 
-!define MUI_ICON "${__FILEDIR__}\assets\shax.ico"
-!define MUI_UNICON "${__FILEDIR__}\assets\shax.ico"
-!define MUI_WELCOMEFINISHPAGE_BITMAP "${__FILEDIR__}\assets\welcome.bmp"
-!define MUI_UNWELCOMEFINISHPAGE_BITMAP "${__FILEDIR__}\assets\welcome.bmp"
+!define MUI_ICON "assets\shax.ico"
+!define MUI_UNICON "assets\shax.ico"
+!define MUI_WELCOMEFINISHPAGE_BITMAP "assets\welcome.bmp"
+!define MUI_UNWELCOMEFINISHPAGE_BITMAP "assets\welcome.bmp"
 !define MUI_ABORTWARNING
 
 !insertmacro MUI_PAGE_WELCOME
@@ -41,15 +39,15 @@ Section "Install SHAX" SEC_INSTALL
   SetShellVarContext current
   SetOverwrite on
   SetOutPath "$INSTDIR"
-  File "${__FILEDIR__}\..\..\index.html"
+  File "..\..\index.html"
   SetOutPath "$INSTDIR\CSXS"
-  File "${__FILEDIR__}\..\..\CSXS\manifest.xml"
+  File "..\..\CSXS\manifest.xml"
   SetOutPath "$INSTDIR\css"
-  File "${__FILEDIR__}\..\..\css\style.css"
+  File "..\..\css\style.css"
   SetOutPath "$INSTDIR\js"
-  File "${__FILEDIR__}\..\..\js\app.js"
+  File "..\..\js\app.js"
   SetOutPath "$INSTDIR\jsx"
-  File "${__FILEDIR__}\..\..\jsx\host.jsx"
+  File "..\..\jsx\host.jsx"
 
   ; Unsigned CEP panels require per-user development-mode registration.
   WriteRegStr HKCU "Software\Adobe\CSXS.9" "PlayerDebugMode" "1"

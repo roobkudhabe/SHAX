@@ -2,11 +2,11 @@
 <ExtensionManifest
     Version="7.0"
     ExtensionBundleId="com.shax.extension"
-    ExtensionBundleVersion="3.3.1"
+    ExtensionBundleVersion="3.4.0"
     ExtensionBundleName="SHAX">
 
     <ExtensionList>
-        <Extension Id="com.shax.panel" Version="3.3.1" />
+        <Extension Id="com.shax.panel" Version="3.4.0" />
     </ExtensionList>
 
     <ExecutionEnvironment>

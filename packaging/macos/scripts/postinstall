@@ -1,0 +1,21 @@
+#!/bin/bash
+# SHAX CEP installer post-install hook. Runs with Installer's privileges.
+# It never deletes Vaults, Brand Kits, or user preference files.
+set -u
+
+CONSOLE_USER="$(/usr/bin/stat -f %Su /dev/console 2>/dev/null || true)"
+case "$CONSOLE_USER" in
+  ""|root|loginwindow|_mbsetupuser)
+    echo "SHAX: Installed the extension system-wide. PlayerDebugMode must be enabled when a user logs in."
+    exit 0
+    ;;
+esac
+
+# CEP does not load unsigned, developer-mode extensions without this setting.
+# Setting the flag does not sign or notarize SHAX.
+for V in 9 10 11 12 13 14; do
+  /usr/bin/sudo -H -u "$CONSOLE_USER" /usr/bin/defaults write "com.adobe.CSXS.$V" PlayerDebugMode 1 >/dev/null 2>&1 || true
+done
+
+echo "SHAX: Extension installed. Quit and restart Adobe After Effects, then open Window > Extensions (Legacy) > SHAX."
+exit 0

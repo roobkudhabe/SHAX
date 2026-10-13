@@ -25,4 +25,4 @@ for v in 9 10 11 12 13; do
   defaults write "com.adobe.CSXS.$v" PlayerDebugMode 1 >/dev/null 2>&1 || true
 done
 
-echo "SHAX v3.3.1 installed. Restart After Effects, then open Window > Extensions (Legacy) > SHAX."
+echo "SHAX v3.4.0 installed. Restart After Effects, then open Window > Extensions (Legacy) > SHAX."

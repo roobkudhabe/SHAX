@@ -1,3 +1,7 @@
+## One-click installers (v3.4.0)
+
+Download **macOS `.pkg`** or **Windows `.exe`** from the [SHAX releases page](https://github.com/roobkudhabe/SHAX/releases) when the installer build is available. Quit After Effects, run the installer, then restart After Effects and open **Window > Extensions (Legacy) > SHAX**. The installers are currently **unsigned test builds**; see [Distribution guide](docs/DISTRIBUTION.md) for security warnings and build steps.
+
 <div align="center">
 
 # SHAX
@@ -6,7 +10,7 @@
 
 A dockable CEP extension that keeps everyday motion-design tools in one place.
 
-**Version 3.3.1** · Release candidate · macOS and Windows installers
+**Version 3.4.0** · Distribution preview · macOS and Windows native installers
 
 </div>
 

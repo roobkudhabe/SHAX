@@ -1,6 +1,8 @@
 ; SHAX v3.4.0 | User-level, no-admin CEP installer for Windows.
 ; Compile from repository root: makensis packaging/windows/SHAX.nsi
 
+!cd "${__FILEDIR__}\..\.."
+
 Unicode true
 !include "MUI2.nsh"
 

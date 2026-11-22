@@ -4478,7 +4478,12 @@ function shax_assetExpressionKeepItems(assetComp) {
         var comp = queue[q];
         for (var li = 1; li <= comp.numLayers; li++) {
             var layer = comp.layer(li);
-            try { if (layer.source instanceof CompItem) add(layer.source); } catch (srcError) {}
+            /* Track both nested comps and footage used by this chain.  The
+               lossless .aep may contain unrelated assets, but only the active
+               comp's actual dependencies need to be portable in its Vault pack. */
+            try {
+                if (layer.source instanceof CompItem || layer.source instanceof FootageItem) add(layer.source);
+            } catch (srcError) {}
             try { walk(layer, 0); } catch (scanError) {}
         }
     }
@@ -4557,45 +4562,63 @@ function shax_assetResourceToken(item, key) {
     } catch (e) {}
 }
 
-function shax_assetCopyResources(resourcesFolder) {
-    var result = { copied:0, missing:0, relinked:0, manifest:[] };
+function shax_assetCopyResources(resourcesFolder, requiredItems) {
+    var result = { copied:0, missing:0, relinked:0, manifest:[], failures:[], skippedUnused:0 };
     if (!resourcesFolder.exists && !resourcesFolder.create()) throw new Error("Could not create Vault resources directory");
+    /* The lossless snapshot keeps the full project, but packing all media in
+       that project can fail on unrelated/unused footage. Walk only sources
+       reachable from the active comp (including static expression references). */
+    var requiredById = {};
+    for (var ri = 0; ri < requiredItems.length; ri++) {
+        try { requiredById[String(requiredItems[ri].id)] = true; } catch (e0) {}
+    }
+    function failure(item, reason) {
+        result.missing++;
+        result.failures.push(String(item.name || "Unnamed footage") + " (" + reason + ")");
+    }
     var snapshot = [];
     for (var i = 1; i <= app.project.numItems; i++) snapshot.push(app.project.item(i));
     for (var n = 0; n < snapshot.length; n++) {
         var item = snapshot[n];
         if (!(item && item instanceof FootageItem)) continue;
+        var id = "";
+        try { id = String(item.id); } catch (e1) {}
+        if (!id || !requiredById[id]) { result.skippedUnused++; continue; }
         var sourceFile = null;
-        try { sourceFile = item.file; } catch (e0) { sourceFile = null; }
+        try { sourceFile = item.file; } catch (e2) { sourceFile = null; }
         if (!sourceFile) {
-            try { if (item.footageMissing) result.missing++; } catch (missingError) {}
-            continue; /* Solid and generated footage have no external file. */
+            try { if (item.footageMissing) failure(item, "missing source file"); } catch (e3) {}
+            continue; /* No file is normal for solids and generated footage. */
         }
-        try { if (item.footageMissing || !sourceFile.exists) { result.missing++; continue; } }
-        catch (e1) { if (!sourceFile.exists) { result.missing++; continue; } }
+        var isMissing = false;
+        try { isMissing = !!item.footageMissing || !sourceFile.exists; }
+        catch (e4) { isMissing = !sourceFile.exists; }
+        if (isMissing) { failure(item, "missing: " + sourceFile.fsName); continue; }
 
         var key = "R" + shax_assetPad(n + 1, 4);
         var unit = new Folder(resourcesFolder.fsName + "/" + key + "_" + shax_assetSafeId(item.name));
-        if (!unit.exists && !unit.create()) { result.missing++; continue; }
+        if (!unit.exists && !unit.create()) { failure(item, "cannot create destination folder"); continue; }
         var sequence = shax_assetIsSequenceCandidate(item, sourceFile);
-        var copied = false;
-        var count = 0;
+        var copied = false, count = 0, reason = "could not copy or relink file";
         if (sequence) {
-            var sequenceResult = shax_assetCopySequence(item, sourceFile, unit);
-            count = sequenceResult.copied;
-            copied = sequenceResult.relinked;
+            try {
+                var sequenceResult = shax_assetCopySequence(item, sourceFile, unit);
+                count = sequenceResult.copied;
+                copied = sequenceResult.relinked;
+                if (!copied) reason = "image sequence copy/relink failed";
+            } catch (sequenceError) { reason = String(sequenceError); }
         } else {
             var target = new File(unit.fsName + "/" + sourceFile.name);
             try {
                 if (sourceFile.copy(target.fsName) && target.exists) {
                     count = 1;
-                    item.replace(target);
-                    copied = true;
-                }
-            } catch (copyError) { copied = false; }
+                    try { item.replace(target); copied = true; }
+                    catch (replaceError) { reason = "After Effects relink failed: " + String(replaceError); }
+                } else reason = "file copy failed: " + sourceFile.fsName;
+            } catch (copyError) { reason = "file copy failed: " + String(copyError); }
         }
         result.copied += count;
-        if (!copied) { result.missing++; continue; }
+        if (!copied) { failure(item, reason); continue; }
         result.relinked++;
         shax_assetResourceToken(item, key);
         result.manifest.push({
@@ -4668,7 +4691,10 @@ function shax_assetRelinkImportedMedia(data, newItems) {
                 output.relinked++;
             } catch (relinkError) { output.missing++; }
         } else {
-            /* Legacy packs or outside references: never report a broken pack as OK. */
+            /* v4 lossless packs retain unrelated project items intentionally;
+               those items were not packed and must not block the chosen asset.
+               Required media are represented in the manifest and checked above. */
+            if (Number(data.version || 0) >= 4 && String(data.packMode || "") === "lossless-full-project") continue;
             try { if (item.footageMissing || !existing.exists) output.missing++; }
             catch (e2) { if (!existing.exists) output.missing++; }
         }
@@ -4915,8 +4941,12 @@ function shax_saveAssetPack(name, category, sourceMode, packResources) {
         var originalProjectItemCount = Number(app.project.numItems || 0);
 
         if (packResources) {
-            resourceResult = shax_assetCopyResources(resourcesFolder);
-            if (resourceResult.missing > 0) throw new Error("Could not pack " + resourceResult.missing + " linked resource(s). Check missing footage and file permissions, then try saving again.");
+            var requiredItems = shax_assetExpressionKeepItems(assetComp);
+            resourceResult = shax_assetCopyResources(resourcesFolder, requiredItems);
+            if (resourceResult.missing > 0) {
+                var failures = resourceResult.failures || [];
+                throw new Error("Could not pack " + resourceResult.missing + " required resource(s): " + failures.slice(0, 4).join("; ") + (failures.length > 4 ? "; and others" : ""));
+            }
         } else {
             /* An asset with external sources must not be presented as portable
                unless the user deliberately chooses not to collect resources. */
@@ -4932,7 +4962,8 @@ function shax_saveAssetPack(name, category, sourceMode, packResources) {
         app.project.save(projectFile);
         if (!projectFile.exists) throw new Error("Could not save packed .aep project to the Vault directory");
         var meta = {
-            format:"SHAXAssetPack", version:3, packMode:"lossless-full-project", projectItemCount:originalProjectItemCount,
+            format:"SHAXAssetPack", version:4, packMode:"lossless-full-project", projectItemCount:originalProjectItemCount,
+            skippedUnusedResources:Number(resourceResult.skippedUnused || 0),
             id:id, name:name, category:category,
             created:now.toString(), sourceMode:sourceMode, compName:String(assetComp.name || name),
             compTag:compTag, contentStart:Number(timeRange.start || 0),
@@ -4950,7 +4981,7 @@ function shax_saveAssetPack(name, category, sourceMode, packResources) {
         };
         shax_assetWriteJson(metaFile, meta);
         completed = true;
-        result = "OK~~RK_FIELD~~" + shax_assetField(id) + "~~RK_FIELD~~" + meta.resources + "~~RK_FIELD~~" + meta.missing + "~~RK_FIELD~~" + meta.layerCount + "~~RK_FIELD~~" + meta.externalUnpacked;
+        result = "OK~~RK_FIELD~~" + shax_assetField(id) + "~~RK_FIELD~~" + meta.resources + "~~RK_FIELD~~" + meta.missing + "~~RK_FIELD~~" + meta.layerCount + "~~RK_FIELD~~" + meta.externalUnpacked + "~~RK_FIELD~~" + meta.skippedUnusedResources;
     } catch (e) { result = "ERROR~~RK_FIELD~~" + shax_assetField(e.toString()); }
 
     /* Always return to the intact original project, even after pack failure. */

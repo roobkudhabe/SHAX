@@ -1489,7 +1489,8 @@
         var resourceCount = Number(parts[2] || 0);
         var missingCount = Number(parts[3] || 0);
         var unpackedCount = Number(parts[5] || 0);
-        setStatus("Asset saved · " + name + " · " + resourceCount + " resources" + (missingCount ? " · " + missingCount + " missing" : "") + (unpackedCount ? " · " + unpackedCount + " external media not packed (not portable)" : ""), (missingCount || unpackedCount) ? "" : "ok");
+        var skippedCount = Number(parts[6] || 0);
+        setStatus("Asset saved · " + name + " · " + resourceCount + " resources" + (skippedCount ? " · " + skippedCount + " unrelated files skipped" : "") + (missingCount ? " · " + missingCount + " missing" : "") + (unpackedCount ? " · " + unpackedCount + " external media not packed (not portable)" : ""), (missingCount || unpackedCount) ? "" : "ok");
         qs("#vaultPresetName").value = "";
         pulseElement(qs(".vault-capture-card"), "rk-organize-success", 560);
         reloadVault();

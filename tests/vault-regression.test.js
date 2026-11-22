@@ -129,7 +129,7 @@ test('Save succeeds when ExtendScript Project.save returns undefined, and restor
   assert.equal(savedTo.endsWith('asset.aep'),true);
   assert.equal(reopened,true);
   assert.equal(reductions,0,'lossless save must never reduce project');
-  assert.equal(meta.version,3);
+  assert.equal(meta.version,4);
   assert.equal(meta.packMode,'lossless-full-project');
   assert.equal(meta.contentStart,2);
   assert.equal(meta.contentEnd,8);
@@ -147,9 +147,33 @@ test('Missing linked resources fail the save instead of pretending a broken pack
   c.shax_assetCopyResources=()=>({copied:0,missing:2,manifest:[]});
   c.shax_assetDeleteFolderRecursive=()=>{removed=true;return true};
   const result=c.shax_saveAssetPack('Fail','Character','comp','true');
-  assert.match(result,/ERROR.*2 linked resource/);
+  assert.match(result,/ERROR.*2 required resource/);
   assert.equal(reopened,true);
   assert.equal(removed,true);
+});
+
+test('Only footage used by the active composition is required for packing',()=>{
+  const c=buildContext();
+  const comp=new c.CompItem('Scene');comp.id=1;
+  const used=new c.FootageItem('needed.ai',new c.File('/assets/needed.ai'));used.id=2;
+  const unused=new c.FootageItem('other-project.mp4',new c.File('/broken/other-project.mp4'));unused.id=3;
+  comp.numLayers=1;comp.layer=()=>({source:used,numProperties:0});
+  const items=[comp,used,unused];c.app.project={numItems:3,item(i){return items[i-1]}};
+  const required=c.shax_assetExpressionKeepItems(comp);
+  assert.ok(required.includes(used),'must follow footage used as direct layer source');
+  assert.equal(required.includes(unused),false,'unrelated media must not be required');
+  const result=c.shax_assetCopyResources(new c.Folder('/vault/Resources'),required);
+  assert.equal(result.missing,1,'only the needed missing file should block save');
+  assert.equal(result.skippedUnused,1);
+  assert.match(result.failures[0],/needed.ai/);
+  assert.equal(result.failures.some(x=>x.includes('other-project.mp4')),false);
+});
+
+test('Lossless v4 relink does not fail on unrelated unpacked project files',()=>{
+  const c=buildContext();
+  const other=new c.FootageItem('Unrelated.png',new c.File('/missing/unrelated.png'));
+  const result=c.shax_assetRelinkImportedMedia({version:4,packMode:'lossless-full-project',resourceManifest:[],_folder:{fsName:'/vault'}},[other]);
+  assert.equal(result.missing,0);
 });
 
 test('Lossless mode refuses auto-precompose of arbitrary selected layers',()=>{

@@ -1,0 +1,29 @@
+name: SHAX Vault Regression Tests
+
+on:
+  pull_request:
+    paths:
+      - "jsx/host.jsx"
+      - "js/app.js"
+      - "tests/vault-regression.test.js"
+      - ".github/workflows/vault-tests.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  vault-unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Validate ExtendScript-compatible syntax
+        shell: bash
+        run: |
+          node --check < jsx/host.jsx
+          node --check js/app.js
+      - name: Run Vault cross-project regression tests
+        run: node tests/vault-regression.test.js

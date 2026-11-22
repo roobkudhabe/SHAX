@@ -4421,9 +4421,145 @@ function shax_assetCopySequence(item, sourceFile, targetFolder) {
     return { copied:copied, relinked:relinked };
 }
 
+/* Vault v3.4.1: collect expression-only project dependencies before Reduce Project.
+   AE does not track references made by comp("Name") / footage("Name") when reducing. */
+function shax_assetExpressionKeepItems(assetComp) {
+    var keep = [assetComp];
+    var visited = {};
+    var queue = [assetComp];
+    var projectItems = [];
+    var dynamicExpression = false;
+    for (var pi = 1; pi <= app.project.numItems; pi++) projectItems.push(app.project.item(pi));
+    function add(item) {
+        if (!item) return;
+        var id = "";
+        try { id = String(item.id); } catch (e) { return; }
+        if (visited[id]) return;
+        visited[id] = true;
+        keep.push(item);
+        if (item instanceof CompItem) queue.push(item);
+    }
+    try { visited[String(assetComp.id)] = true; } catch (e0) {}
+    function named(kind, name) {
+        for (var ni = 0; ni < projectItems.length; ni++) {
+            var it = projectItems[ni];
+            if (String(it.name || "") !== name) continue;
+            if (kind === "comp" && it instanceof CompItem) add(it);
+            else if (kind === "footage" && it instanceof FootageItem) add(it);
+        }
+    }
+    function scanExpression(expression) {
+        if (!expression) return;
+        var re = /\b(comp|footage)\s*\(\s*(["'])(.*?)\2\s*\)/g;
+        var match;
+        while ((match = re.exec(expression)) !== null) named(match[1], match[3]);
+        /* Dynamic references cannot be packaged reliably by static analysis. */
+        var anyCall = /\b(?:comp|footage)\s*\(/g;
+        var call;
+        while ((call = anyCall.exec(expression)) !== null) {
+            if (!/^[\s]*["']/.test(expression.substring(anyCall.lastIndex))) dynamicExpression = true;
+        }
+    }
+    function walk(group, depth) {
+        if (!group || depth > 32) return;
+        try {
+            if (group.propertyType === PropertyType.PROPERTY) {
+                if (group.canSetExpression && group.expression) scanExpression(String(group.expression));
+                return;
+            }
+            var count = Number(group.numProperties || 0);
+            for (var i = 1; i <= count; i++) {
+                try { walk(group.property(i), depth + 1); } catch (e1) {}
+            }
+        } catch (e2) {}
+    }
+    for (var q = 0; q < queue.length; q++) {
+        if (q > 500) throw new Error("Vault dependency chain is too large");
+        var comp = queue[q];
+        for (var li = 1; li <= comp.numLayers; li++) {
+            var layer = comp.layer(li);
+            try { if (layer.source instanceof CompItem) add(layer.source); } catch (srcError) {}
+            try { walk(layer, 0); } catch (scanError) {}
+        }
+    }
+    if (dynamicExpression) throw new Error("This asset contains dynamic comp()/footage() expressions. Pack their dependencies manually into the composition before saving to Vault.");
+    return keep;
+}
+
+/* Character rigs need their parent nulls, track mattes and thisComp
+   controllers. Precomposing only the visible art can detach the animation. */
+function shax_assetExpandSelectedLayers(comp, selected) {
+    var included = {};
+    var queue = [];
+    var dynamicReference = false;
+    function add(layer) {
+        if (!layer) return;
+        var index;
+        try { index = Number(layer.index); } catch (e) { return; }
+        if (!(index > 0 && index <= comp.numLayers) || included[index]) return;
+        included[index] = true;
+        queue.push(layer);
+    }
+    for (var j = 0; j < selected.length; j++) add(selected[j]);
+    function scanExpression(expression) {
+        if (!expression) return;
+        var names = /\bthisComp\.layer\s*\(\s*(["'])(.*?)\1\s*\)/g;
+        var match;
+        while ((match = names.exec(expression)) !== null) {
+            for (var i = 1; i <= comp.numLayers; i++) {
+                try { if (String(comp.layer(i).name) === match[2]) add(comp.layer(i)); } catch (e) {}
+            }
+        }
+        var indices = /\bthisComp\.layer\s*\(\s*(\d+)\s*\)/g;
+        while ((match = indices.exec(expression)) !== null) {
+            try { add(comp.layer(Number(match[1]))); } catch (e1) {}
+        }
+        var calls = /\bthisComp\.layer\s*\(/g;
+        while ((match = calls.exec(expression)) !== null) {
+            if (!/^[\s]*(?:["']|\d)/.test(expression.substring(calls.lastIndex))) dynamicReference = true;
+        }
+    }
+    function scanProperties(group, depth) {
+        if (!group || depth > 32) return;
+        try {
+            if (group.propertyType === PropertyType.PROPERTY) {
+                if (group.canSetExpression && group.expression) scanExpression(String(group.expression));
+                return;
+            }
+            for (var n = 1; n <= Number(group.numProperties || 0); n++) {
+                try { scanProperties(group.property(n), depth + 1); } catch (e2) {}
+            }
+        } catch (e3) {}
+    }
+    for (var q = 0; q < queue.length; q++) {
+        if (q > comp.numLayers) break;
+        var layer = queue[q];
+        try { if (layer.parent) add(layer.parent); } catch (parentError) {}
+        try {
+            if (layer.hasTrackMatte) {
+                if (layer.trackMatteLayer) add(layer.trackMatteLayer);
+                else if (layer.index > 1) add(comp.layer(layer.index - 1));
+            }
+        } catch (matteError) {}
+        try { scanProperties(layer, 0); } catch (scanError) {}
+    }
+    if (dynamicReference) throw new Error("This character uses a dynamic thisComp.layer() expression. Include its controller layers manually and use static layer names before saving to Vault.");
+    var result = [];
+    for (var key in included) if (included.hasOwnProperty(key)) result.push(Number(key));
+    result.sort(function (a, b) { return a - b; });
+    return result;
+}
+
+function shax_assetResourceToken(item, key) {
+    try {
+        var comment = String(item.comment || "").replace(/\s*\[SHAX_RSRC:[A-Za-z0-9_-]+\]/g, "");
+        item.comment = comment + " [SHAX_RSRC:" + key + "]";
+    } catch (e) {}
+}
+
 function shax_assetCopyResources(resourcesFolder) {
-    var result = { copied:0, missing:0, relinked:0 };
-    if (!resourcesFolder.exists) resourcesFolder.create();
+    var result = { copied:0, missing:0, relinked:0, manifest:[] };
+    if (!resourcesFolder.exists && !resourcesFolder.create()) throw new Error("Could not create Vault resources directory");
     var snapshot = [];
     for (var i = 1; i <= app.project.numItems; i++) snapshot.push(app.project.item(i));
     for (var n = 0; n < snapshot.length; n++) {
@@ -4431,33 +4567,114 @@ function shax_assetCopyResources(resourcesFolder) {
         if (!(item && item instanceof FootageItem)) continue;
         var sourceFile = null;
         try { sourceFile = item.file; } catch (e0) { sourceFile = null; }
-        if (!sourceFile) continue;
-        try { if (item.footageMissing || !sourceFile.exists) { result.missing++; continue; } } catch (e1) { if (!sourceFile.exists) { result.missing++; continue; } }
+        if (!sourceFile) {
+            try { if (item.footageMissing) result.missing++; } catch (missingError) {}
+            continue; /* Solid and generated footage have no external file. */
+        }
+        try { if (item.footageMissing || !sourceFile.exists) { result.missing++; continue; } }
+        catch (e1) { if (!sourceFile.exists) { result.missing++; continue; } }
 
-        var unit = new Folder(resourcesFolder.fsName + "/" + shax_assetPad(n + 1, 3) + "_" + shax_assetSafeId(item.name));
-        if (!unit.exists) unit.create();
-
-        if (shax_assetIsSequenceCandidate(item, sourceFile)) {
+        var key = "R" + shax_assetPad(n + 1, 4);
+        var unit = new Folder(resourcesFolder.fsName + "/" + key + "_" + shax_assetSafeId(item.name));
+        if (!unit.exists && !unit.create()) { result.missing++; continue; }
+        var sequence = shax_assetIsSequenceCandidate(item, sourceFile);
+        var copied = false;
+        var count = 0;
+        if (sequence) {
             var sequenceResult = shax_assetCopySequence(item, sourceFile, unit);
-            result.copied += sequenceResult.copied;
-            if (sequenceResult.relinked) result.relinked++;
-            else result.missing++;
-            continue;
+            count = sequenceResult.copied;
+            copied = sequenceResult.relinked;
+        } else {
+            var target = new File(unit.fsName + "/" + sourceFile.name);
+            try {
+                if (sourceFile.copy(target.fsName) && target.exists) {
+                    count = 1;
+                    item.replace(target);
+                    copied = true;
+                }
+            } catch (copyError) { copied = false; }
         }
-
-        var target = new File(unit.fsName + "/" + sourceFile.name);
-        try {
-            if (sourceFile.copy(target.fsName)) {
-                result.copied++;
-                try { item.replace(target); result.relinked++; } catch (replaceError) {}
-            } else {
-                result.missing++;
-            }
-        } catch (copyError2) {
-            result.missing++;
-        }
+        result.copied += count;
+        if (!copied) { result.missing++; continue; }
+        result.relinked++;
+        shax_assetResourceToken(item, key);
+        result.manifest.push({
+            key:key, name:String(item.name || ""), originalName:String(sourceFile.name || ""),
+            relativePath:"Resources/" + unit.name + "/" + sourceFile.name,
+            sequence:sequence, fileCount:count
+        });
     }
     return result;
+}
+
+/* Save the authored visible range so Apply can start at the user's playhead,
+   even if selected layers were animated late in their source comp. */
+function shax_assetContentRange(comp) {
+    var start = Number(comp.duration || 1), end = 0, found = false;
+    try {
+        if (Number(comp.workAreaStart || 0) > Number(comp.frameDuration || 0) &&
+            Number(comp.workAreaDuration || 0) < Number(comp.duration || 0) - Number(comp.frameDuration || 0)) {
+            return { start:Number(comp.workAreaStart), end:Math.min(comp.duration, comp.workAreaStart + comp.workAreaDuration) };
+        }
+    } catch (workError) {}
+    for (var i = 1; i <= comp.numLayers; i++) {
+        var layer = comp.layer(i);
+        try {
+            if (!layer.enabled || layer.nullLayer || layer.hasVideo === false) continue;
+            var a = Math.max(0, Number(layer.inPoint || 0));
+            var b = Math.min(Number(comp.duration), Number(layer.outPoint || comp.duration));
+            if (b > a) { start = Math.min(start,a); end = Math.max(end,b); found = true; }
+        } catch (e) {}
+    }
+    if (!found) return {start:0,end:Number(comp.duration || 1)};
+    return {start:start,end:Math.max(start + Number(comp.frameDuration || 1/25),end)};
+}
+
+/* Relink using package-relative file names rather than paths embedded on the
+   saving computer. The comment token distinguishes identically named media. */
+function shax_assetRelinkImportedMedia(data, newItems) {
+    var manifest = data.resourceManifest || [];
+    var output = {checked:0,relinked:0,missing:0};
+    var used = {};
+    for (var i = 0; i < newItems.length; i++) {
+        var item = newItems[i];
+        if (!(item && item instanceof FootageItem)) continue;
+        var existing = null;
+        try { existing = item.file; } catch (e0) { existing = null; }
+        if (!existing) continue;
+        output.checked++;
+        var entry = null;
+        var comment = "";
+        try { comment = String(item.comment || ""); } catch (commentError) {}
+        var token = comment.match(/\[SHAX_RSRC:([A-Za-z0-9_-]+)\]/);
+        if (token) {
+            for (var a = 0; a < manifest.length; a++) if (manifest[a].key === token[1]) { entry = manifest[a]; used[a] = true; break; }
+        }
+        if (!entry) {
+            for (var m = 0; m < manifest.length; m++) {
+                if (used[m]) continue;
+                if (String(manifest[m].name) === String(item.name) &&
+                    String(manifest[m].originalName).toLowerCase() === String(existing.name).toLowerCase()) {
+                    entry = manifest[m]; used[m] = true; break;
+                }
+            }
+        }
+        if (entry) {
+            var file = new File(data._folder.fsName + "/" + String(entry.relativePath || ""));
+            if (!file.exists) { output.missing++; continue; }
+            try {
+                if (entry.sequence) item.replaceWithSequence(file, false);
+                else item.replace(file);
+                output.relinked++;
+            } catch (relinkError) { output.missing++; }
+        } else {
+            /* Legacy packs or outside references: never report a broken pack as OK. */
+            try { if (item.footageMissing || !existing.exists) output.missing++; }
+            catch (e2) { if (!existing.exists) output.missing++; }
+        }
+    }
+    for (var ri = 0; ri < manifest.length; ri++) if (!used[ri]) output.missing++;
+    return output;
 }
 
 function shax_assetPreviewClampBounds(bounds, comp) {
@@ -4648,6 +4865,10 @@ function shax_saveAssetPack(name, category, sourceMode, packResources) {
     var activeComp = app.project ? app.project.activeItem : null;
     if (!(activeComp && activeComp instanceof CompItem)) return "NO_ACTIVE_COMP";
 
+    sourceMode = String(sourceMode) === "selection" ? "selection" : "comp";
+    packResources = String(packResources) === "true";
+    if (sourceMode === "selection" && (!activeComp.selectedLayers || !activeComp.selectedLayers.length)) return "NO_SELECTION";
+
     if (!app.project.file) {
         var saved = false;
         try { saved = app.project.saveWithDialog(); } catch (saveDialogError) {
@@ -4655,11 +4876,6 @@ function shax_saveAssetPack(name, category, sourceMode, packResources) {
         }
         if (!saved || !app.project.file) return "SAVE_CANCELLED";
     }
-
-    sourceMode = String(sourceMode) === "selection" ? "selection" : "comp";
-    packResources = String(packResources) === "true";
-    if (sourceMode === "selection" && (!activeComp.selectedLayers || !activeComp.selectedLayers.length)) return "NO_SELECTION";
-
     name = shax_assetSafeName(name || activeComp.name || "Asset");
     category = shax_assetSafeName(category || "Other");
     var originalFile = new File(app.project.file.fsName);
@@ -4671,69 +4887,84 @@ function shax_saveAssetPack(name, category, sourceMode, packResources) {
     var projectFile = new File(packFolder.fsName + "/asset.aep");
     var metaFile = new File(packFolder.fsName + "/asset.shaxasset");
     var result = "";
-    var resourceResult = { copied:0, missing:0, relinked:0 };
+    var completed = false;
+    var resourceResult = { copied:0, missing:0, relinked:0, manifest:[] };
 
     try {
+        /* Save before temporary reductions. The user's original .aep is reopened
+           without saving temporary precomposes or relinking changes. */
         app.project.save();
         var assetComp = activeComp;
         var previewTime = Math.max(0, Math.min(activeComp.time, Math.max(0, activeComp.duration - activeComp.frameDuration)));
-
         if (sourceMode === "selection") {
             var selected = activeComp.selectedLayers;
-            var indices = [];
-            for (var i = 0; i < selected.length; i++) indices.push(Number(selected[i].index));
-            indices.sort(function (a, b) { return a - b; });
-            try {
-                assetComp = activeComp.layers.precompose(indices, name, true);
-            } catch (precomposeError) {
-                throw new Error("Could not precompose the selected layers. " + precomposeError.toString());
-            }
+            var indices = shax_assetExpandSelectedLayers(activeComp, selected);
+            try { assetComp = activeComp.layers.precompose(indices, name, true); }
+            catch (precomposeError) { throw new Error("Could not precompose selected layers. " + precomposeError.toString()); }
             if (!(assetComp && assetComp instanceof CompItem)) throw new Error("Could not create the reusable asset composition");
             try { assetComp.name = name; } catch (renameError) {}
             previewTime = Math.max(0, Math.min(previewTime, Math.max(0, assetComp.duration - assetComp.frameDuration)));
         }
 
+        var timeRange = shax_assetContentRange(assetComp);
+        /* A unique marker makes the correct comp unambiguous after importing
+           an .aep containing multiple nested comps with identical names. */
+        var compTag = "[SHAX_ASSET:" + id + "]";
+        try { assetComp.comment = String(assetComp.comment || "") + " " + compTag; } catch (tagError) {}
+
         var previewResult = shax_assetRenderPreviewSequence(assetComp, packFolder, previewTime);
+        var keepItems = shax_assetExpressionKeepItems(assetComp);
+        try { app.project.reduceProject(keepItems); }
+        catch (reduceError) { throw new Error("Could not reduce the project to this asset. " + reduceError.toString()); }
 
-        try { app.project.reduceProject([assetComp]); }
-        catch (reduceError) { throw new Error("Could not reduce the project to the saved asset. " + reduceError.toString()); }
-
-        if (packResources) resourceResult = shax_assetCopyResources(resourcesFolder);
+        if (packResources) {
+            resourceResult = shax_assetCopyResources(resourcesFolder);
+            if (resourceResult.missing > 0) throw new Error("Could not pack " + resourceResult.missing + " linked resource(s). Check missing footage and file permissions, then try saving again.");
+        } else {
+            /* An asset with external sources must not be presented as portable
+               unless the user deliberately chooses not to collect resources. */
+            var externalCount = 0;
+            for (var fi = 1; fi <= app.project.numItems; fi++) {
+                var footage = app.project.item(fi);
+                if (!(footage instanceof FootageItem)) continue;
+                try { if (footage.file) externalCount++; } catch (fileError) {}
+            }
+            resourceResult.externalUnpacked = externalCount;
+        }
 
         app.project.save(projectFile);
-
+        if (!projectFile.exists) throw new Error("Could not save packed .aep project to the Vault directory");
         var meta = {
-            format:"SHAXAssetPack",
-            version:1,
-            id:id,
-            name:name,
-            category:category,
-            created:now.toString(),
-            sourceMode:sourceMode,
-            compName:String(assetComp.name || name),
-            duration:Number(assetComp.duration || 0),
-            frameRate:Number(assetComp.frameRate || 0),
-            width:Number(assetComp.width || 0),
-            height:Number(assetComp.height || 0),
+            format:"SHAXAssetPack", version:2, id:id, name:name, category:category,
+            created:now.toString(), sourceMode:sourceMode, compName:String(assetComp.name || name),
+            compTag:compTag, contentStart:Number(timeRange.start || 0),
+            contentEnd:Number(timeRange.end || assetComp.duration),
+            duration:Number(assetComp.duration || 0), frameRate:Number(assetComp.frameRate || 0),
+            width:Number(assetComp.width || 0), height:Number(assetComp.height || 0),
             layerCount:Number(assetComp.numLayers || 0),
-            resources:Number(resourceResult.copied || 0),
-            missing:Number(resourceResult.missing || 0),
+            resources:Number(resourceResult.copied || 0), missing:Number(resourceResult.missing || 0),
+            externalUnpacked:Number(resourceResult.externalUnpacked || 0),
+            resourceManifest:resourceResult.manifest || [],
             projectFile:"asset.aep",
             previewFile:(previewResult && previewResult.poster) ? previewResult.poster : "preview.png",
             previewFrames:(previewResult && previewResult.frames) ? previewResult.frames : [],
             previewFrameCount:(previewResult && previewResult.count) ? previewResult.count : 0
         };
         shax_assetWriteJson(metaFile, meta);
-        result = "OK~~RK_FIELD~~" + shax_assetField(id) + "~~RK_FIELD~~" + meta.resources + "~~RK_FIELD~~" + meta.missing + "~~RK_FIELD~~" + meta.layerCount;
-    } catch (e) {
-        result = "ERROR~~RK_FIELD~~" + shax_assetField(e.toString());
-    }
+        completed = true;
+        result = "OK~~RK_FIELD~~" + shax_assetField(id) + "~~RK_FIELD~~" + meta.resources + "~~RK_FIELD~~" + meta.missing + "~~RK_FIELD~~" + meta.layerCount + "~~RK_FIELD~~" + meta.externalUnpacked;
+    } catch (e) { result = "ERROR~~RK_FIELD~~" + shax_assetField(e.toString()); }
 
-    try { app.project.close(CloseOptions.DO_NOT_SAVE_CHANGES); } catch (closeError) {}
-    try { app.open(originalFile); }
-    catch (openError) {
-        return "ERROR~~RK_FIELD~~Asset pack was created, but SHAX could not reopen the original project: " + shax_assetField(openError.toString());
+    /* Always return to the intact original project, even after pack failure. */
+    var restored = false;
+    try {
+        app.project.close(CloseOptions.DO_NOT_SAVE_CHANGES);
+        app.open(originalFile);
+        restored = true;
+    } catch (openError) {
+        result = "ERROR~~RK_FIELD~~SHAX could not restore the original project: " + shax_assetField(openError.toString());
     }
+    if ((!completed || !restored) && packFolder.exists) shax_assetDeleteFolderRecursive(packFolder);
     return result;
 }
 
@@ -4845,7 +5076,10 @@ function shax_rebuildAssetPreview(id) {
         data.previewFile = (previewResult && previewResult.poster) ? previewResult.poster : String(data.previewFile || "preview.png");
         data.previewFrames = (previewResult && previewResult.frames) ? previewResult.frames : [];
         data.previewFrameCount = (previewResult && previewResult.count) ? previewResult.count : 0;
-        shax_assetWriteJson(new File(data._folder.fsName + "/asset.shaxasset"), data);
+        /* _folder is an ExtendScript Folder object, not JSON metadata. */
+        var writeData = {};
+        for (var mk in data) if (data.hasOwnProperty(mk) && mk !== "_folder") writeData[mk] = data[mk];
+        shax_assetWriteJson(new File(data._folder.fsName + "/asset.shaxasset"), writeData);
 
         var posterFile = new File(data._folder.fsName + "/" + String(data.previewFile || "preview.png"));
         var framePaths = [];
@@ -4867,13 +5101,11 @@ function shax_rebuildAssetPreview(id) {
 
 function shax_assetImportPack(data, previewMode, targetComp) {
     var projectFile = new File(data._folder.fsName + "/" + String(data.projectFile || "asset.aep"));
-    if (!projectFile.exists) throw new Error("Packed AE project is missing");
-
+    if (!projectFile.exists) throw new Error("Packed AE project is missing. Re-save this asset from its original project.");
     var before = {};
     for (var i = 1; i <= app.project.numItems; i++) {
         try { before[String(app.project.item(i).id)] = true; } catch (e0) {}
     }
-
     var io = new ImportOptions(projectFile);
     try { if (io.canImportAs(ImportAsType.PROJECT)) io.importAs = ImportAsType.PROJECT; } catch (e1) {}
     app.project.importFile(io);
@@ -4889,12 +5121,18 @@ function shax_assetImportPack(data, previewMode, targetComp) {
 
     var root = null;
     var assetComp = null;
+    var tag = String(data.compTag || "");
     for (var n = 0; n < newItems.length; n++) {
         var item = newItems[n];
         try {
             if (!root && item instanceof FolderItem && item.parentFolder === app.project.rootFolder) root = item;
-            if (!assetComp && item instanceof CompItem && String(item.name) === String(data.compName)) assetComp = item;
+            if (tag && item instanceof CompItem && String(item.comment || "").indexOf(tag) !== -1) assetComp = item;
         } catch (e3) {}
+    }
+    if (!assetComp) {
+        for (var cn = 0; cn < newItems.length; cn++) {
+            if (newItems[cn] instanceof CompItem && String(newItems[cn].name) === String(data.compName)) { assetComp = newItems[cn]; break; }
+        }
     }
     if (!assetComp) {
         for (var c = 0; c < newItems.length; c++) if (newItems[c] instanceof CompItem) { assetComp = newItems[c]; break; }
@@ -4902,14 +5140,24 @@ function shax_assetImportPack(data, previewMode, targetComp) {
     if (!assetComp) throw new Error("Saved asset composition was not found after import");
 
     if (!root) {
-        root = app.project.items.addFolder((previewMode ? "[SHAX PREVIEW] " : "SHAX • ") + String(data.name || "Asset"));
+        root = app.project.items.addFolder((previewMode ? "[SHAX PREVIEW] " : "SHAX ") + String(data.name || "Asset"));
         for (var m = 0; m < newItems.length; m++) {
             try { if (newItems[m] !== root && newItems[m].parentFolder === app.project.rootFolder) newItems[m].parentFolder = root; } catch (e4) {}
         }
     }
-    try { root.name = (previewMode ? "[SHAX PREVIEW] " : "SHAX • ") + String(data.name || assetComp.name); } catch (e5) {}
+    try { root.name = (previewMode ? "[SHAX PREVIEW] " : "SHAX ") + String(data.name || assetComp.name); } catch (e5) {}
 
-    return { root:root, comp:assetComp, items:newItems.length, target:targetComp };
+    var check = shax_assetRelinkImportedMedia(data, newItems);
+    if (check.missing > 0) {
+        /* Keep a clear error instead of silently inserting a partly broken character. */
+        try { if (root instanceof FolderItem) shax_assetRemoveProjectFolder(root); } catch (cleanupError) {}
+        throw new Error("Vault asset has " + check.missing + " missing resource(s). Re-save the asset with Pack Resources enabled, or restore its missing media files.");
+    }
+    if (Number(data.externalUnpacked || 0) > 0) {
+        /* A pack without copied resources may work locally but is not guaranteed on other machines. */
+        if (check.checked === 0) throw new Error("This Vault asset requires media that was not packed. Re-save it with Pack Resources enabled.");
+    }
+    return { root:root, comp:assetComp, items:newItems.length, target:targetComp, relinked:check.relinked };
 }
 
 function shax_previewAssetPack(id) {
@@ -4941,7 +5189,7 @@ function shax_applyAssetPack(id, insertIntoComp) {
         var root = null;
         var assetComp = null;
         var importedCount = 0;
-
+        var targetTime = null;
         if (String(SHAX_ASSET_PREVIEW_PACK_ID) === String(id)) {
             root = shax_assetFindItemById(SHAX_ASSET_PREVIEW_ROOT_ID);
             assetComp = shax_assetFindItemById(SHAX_ASSET_PREVIEW_COMP_ID);
@@ -4952,25 +5200,35 @@ function shax_applyAssetPack(id, insertIntoComp) {
                 root = null; assetComp = null;
             }
         }
-
+        if (!target) target = app.project && app.project.activeItem instanceof CompItem ? app.project.activeItem : null;
+        if (insertIntoComp && !target) throw new Error("Open the destination composition in After Effects before clicking APPLY. No layer was inserted.");
+        if (insertIntoComp && target) {
+            targetTime = Number(target.time || 0);
+            if (targetTime >= Number(target.duration || 0) - Number(target.frameDuration || 1/25))
+                throw new Error("Move the playhead earlier in the destination composition so the asset has room to play.");
+        }
         if (!assetComp) {
-            target = app.project && app.project.activeItem instanceof CompItem ? app.project.activeItem : null;
             var imported = shax_assetImportPack(data, false, target);
             root = imported.root;
             assetComp = imported.comp;
             importedCount = imported.items;
         } else {
-            try { root.name = "SHAX • " + String(data.name || assetComp.name); } catch (renameError) {}
+            try { root.name = "SHAX " + String(data.name || assetComp.name); } catch (renameError) {}
         }
 
         SHAX_ASSET_PREVIEW_ROOT_ID = 0;
         SHAX_ASSET_PREVIEW_COMP_ID = 0;
         SHAX_ASSET_PREVIEW_RETURN_COMP_ID = 0;
         SHAX_ASSET_PREVIEW_PACK_ID = "";
-
         if (insertIntoComp && target && target instanceof CompItem && target !== assetComp) {
+            var sourceStart = Math.max(0, Number(data.contentStart || 0));
+            var sourceEnd = Number(data.contentEnd != null ? data.contentEnd : assetComp.duration);
+            if (!isFinite(sourceEnd) || sourceEnd <= sourceStart) sourceEnd = Number(assetComp.duration || 1);
+            var clipDuration = Math.max(Number(assetComp.frameDuration || 1/25), sourceEnd - sourceStart);
             var layer = target.layers.add(assetComp);
-            try { layer.startTime = target.time; } catch (timeError) {}
+            layer.startTime = targetTime - sourceStart;
+            layer.inPoint = targetTime;
+            layer.outPoint = Math.min(Number(target.duration), targetTime + clipDuration);
             try { layer.name = String(data.name || assetComp.name); } catch (nameError) {}
             try {
                 for (var s = 1; s <= target.numLayers; s++) target.layer(s).selected = false;
@@ -4980,7 +5238,6 @@ function shax_applyAssetPack(id, insertIntoComp) {
             app.endUndoGroup();
             return "OK~~RK_FIELD~~INSERTED~~RK_FIELD~~" + shax_assetField(assetComp.name) + "~~RK_FIELD~~" + importedCount;
         }
-
         try { assetComp.openInViewer(); } catch (viewerError3) {}
         app.endUndoGroup();
         return "OK~~RK_FIELD~~IMPORTED~~RK_FIELD~~" + shax_assetField(assetComp.name) + "~~RK_FIELD~~" + importedCount;

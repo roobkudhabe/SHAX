@@ -1488,7 +1488,8 @@
       if (parts[0] === "OK") {
         var resourceCount = Number(parts[2] || 0);
         var missingCount = Number(parts[3] || 0);
-        setStatus("Asset saved · " + name + " · " + resourceCount + " resources" + (missingCount ? " · " + missingCount + " missing" : ""), missingCount ? "" : "ok");
+        var unpackedCount = Number(parts[5] || 0);
+        setStatus("Asset saved · " + name + " · " + resourceCount + " resources" + (missingCount ? " · " + missingCount + " missing" : "") + (unpackedCount ? " · " + unpackedCount + " external media not packed (not portable)" : ""), (missingCount || unpackedCount) ? "" : "ok");
         qs("#vaultPresetName").value = "";
         pulseElement(qs(".vault-capture-card"), "rk-organize-success", 560);
         reloadVault();
@@ -1600,7 +1601,7 @@
       if (parts[0] === "OK") {
         var mode = parts[1] || "IMPORTED";
         var compName = parts[2] || "asset";
-        setStatus((mode === "INSERTED" ? "Asset inserted at playhead" : "Asset imported") + " · " + compName, "ok");
+        setStatus((mode === "INSERTED" ? "Asset inserted at playhead" : "Asset imported into Project panel only · enable Insert on Apply to add it to a composition") + " · " + compName, "ok");
         var item = qs('.vault-item[data-vault-id="' + String(id).replace(/"/g, '\\"') + '"]');
         pulseElement(item, "rk-vault-applied", 620);
         return;

@@ -4867,7 +4867,10 @@ function shax_saveAssetPack(name, category, sourceMode, packResources) {
 
     sourceMode = String(sourceMode) === "selection" ? "selection" : "comp";
     packResources = String(packResources) === "true";
-    if (sourceMode === "selection" && (!activeComp.selectedLayers || !activeComp.selectedLayers.length)) return "NO_SELECTION";
+    /* Lossless test mode must not auto-precompose selected layers: that changes
+       the layer context for expressions, time-remapping and rigs. */
+    if (sourceMode === "selection") return "ERROR~~RK_FIELD~~Lossless Vault: Selected Layers is temporarily disabled for complex rigs. Open the original character PRECOMP, select Active Comp, and save it without auto-precomposing.";
+    if (!packResources) return "ERROR~~RK_FIELD~~Lossless Vault requires Pack Resources ON for reliable cross-project reuse.";
 
     if (!app.project.file) {
         var saved = false;
@@ -4896,15 +4899,8 @@ function shax_saveAssetPack(name, category, sourceMode, packResources) {
         app.project.save();
         var assetComp = activeComp;
         var previewTime = Math.max(0, Math.min(activeComp.time, Math.max(0, activeComp.duration - activeComp.frameDuration)));
-        if (sourceMode === "selection") {
-            var selected = activeComp.selectedLayers;
-            var indices = shax_assetExpandSelectedLayers(activeComp, selected);
-            try { assetComp = activeComp.layers.precompose(indices, name, true); }
-            catch (precomposeError) { throw new Error("Could not precompose selected layers. " + precomposeError.toString()); }
-            if (!(assetComp && assetComp instanceof CompItem)) throw new Error("Could not create the reusable asset composition");
-            try { assetComp.name = name; } catch (renameError) {}
-            previewTime = Math.max(0, Math.min(previewTime, Math.max(0, assetComp.duration - assetComp.frameDuration)));
-        }
+        /* Lossless capture: do not change the active composition or move layers.
+           The original project remains the source of truth. */
 
         var timeRange = shax_assetContentRange(assetComp);
         /* A unique marker makes the correct comp unambiguous after importing
@@ -4913,9 +4909,10 @@ function shax_saveAssetPack(name, category, sourceMode, packResources) {
         try { assetComp.comment = String(assetComp.comment || "") + " " + compTag; } catch (tagError) {}
 
         var previewResult = shax_assetRenderPreviewSequence(assetComp, packFolder, previewTime);
-        var keepItems = shax_assetExpressionKeepItems(assetComp);
-        try { app.project.reduceProject(keepItems); }
-        catch (reduceError) { throw new Error("Could not reduce the project to this asset. " + reduceError.toString()); }
+        /* Full project snapshot by design: Adobe Reduce Project can remove
+           nonsubordinate compositions used through expressions, even if a
+           partial static dependency scan found some references. */
+        var originalProjectItemCount = Number(app.project.numItems || 0);
 
         if (packResources) {
             resourceResult = shax_assetCopyResources(resourcesFolder);
@@ -4935,7 +4932,8 @@ function shax_saveAssetPack(name, category, sourceMode, packResources) {
         app.project.save(projectFile);
         if (!projectFile.exists) throw new Error("Could not save packed .aep project to the Vault directory");
         var meta = {
-            format:"SHAXAssetPack", version:2, id:id, name:name, category:category,
+            format:"SHAXAssetPack", version:3, packMode:"lossless-full-project", projectItemCount:originalProjectItemCount,
+            id:id, name:name, category:category,
             created:now.toString(), sourceMode:sourceMode, compName:String(assetComp.name || name),
             compTag:compTag, contentStart:Number(timeRange.start || 0),
             contentEnd:Number(timeRange.end || assetComp.duration),
@@ -5128,6 +5126,9 @@ function shax_assetImportPack(data, previewMode, targetComp) {
             if (!root && item instanceof FolderItem && item.parentFolder === app.project.rootFolder) root = item;
             if (tag && item instanceof CompItem && String(item.comment || "").indexOf(tag) !== -1) assetComp = item;
         } catch (e3) {}
+    }
+    if (!assetComp && String(data.packMode || "") === "lossless-full-project") {
+        throw new Error("Lossless Vault cannot find the saved composition tag after import. The packed project may be incomplete; nothing has been inserted.");
     }
     if (!assetComp) {
         for (var cn = 0; cn < newItems.length; cn++) {

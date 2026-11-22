@@ -118,17 +118,19 @@ test('Save succeeds when ExtendScript Project.save returns undefined, and restor
   const source=new c.CompItem('Walking Character',10);source.id=13;source.time=1;source.numLayers=1;
   source.layer=()=>({enabled:true,nullLayer:false,hasVideo:true,inPoint:2,outPoint:8});
   const original=new c.File('/author/character.aep');original.exists=true;
-  let reopened=false, savedTo=null, meta=null;
-  c.app.project={activeItem:source,file:original,save(file){if(file){file.exists=true;savedTo=file.fsName;this.file=file;}},close(){},reduceProject() {},numItems:1,item(){return source}};
+  let reopened=false, savedTo=null, meta=null, reductions=0;
+  c.app.project={activeItem:source,file:original,save(file){if(file){file.exists=true;savedTo=file.fsName;this.file=file;}},close(){},reduceProject(){reductions++},numItems:1,item(){return source}};
   c.app.open=()=>{reopened=true};
   c.shax_assetRenderPreviewSequence=()=>({poster:'',frames:[],count:0});
   c.shax_assetExpressionKeepItems=()=>[source];
   c.shax_assetWriteJson=(file,data)=>{meta=data};
-  const result=c.shax_saveAssetPack('Walk','Character','comp','false');
+  const result=c.shax_saveAssetPack('Walk','Character','comp','true');
   assert.match(result,/^OK~~RK_FIELD~~/);
   assert.equal(savedTo.endsWith('asset.aep'),true);
   assert.equal(reopened,true);
-  assert.equal(meta.version,2);
+  assert.equal(reductions,0,'lossless save must never reduce project');
+  assert.equal(meta.version,3);
+  assert.equal(meta.packMode,'lossless-full-project');
   assert.equal(meta.contentStart,2);
   assert.equal(meta.contentEnd,8);
 });
@@ -150,4 +152,16 @@ test('Missing linked resources fail the save instead of pretending a broken pack
   assert.equal(removed,true);
 });
 
+test('Lossless mode refuses auto-precompose of arbitrary selected layers',()=>{
+  const c=buildContext();const scene=new c.CompItem('Scene');scene.numLayers=3;scene.selectedLayers=[{index:1}];c.app.project.activeItem=scene;
+  let saved=false;c.app.project.save=()=>{saved=true};
+  const output=c.shax_saveAssetPack('character','Character','selection','true');
+  assert.match(output,/ERROR.*Selected Layers is temporarily disabled/);
+  assert.equal(saved,false);
+});
+test('Lossless Vault refuses uncollected external resources',()=>{
+  const c=buildContext();const scene=new c.CompItem('Scene');c.app.project.activeItem=scene;
+  const output=c.shax_saveAssetPack('scene','Scene','comp','false');
+  assert.match(output,/ERROR.*Pack Resources ON/);
+});
 console.log(`${passes} regression checks passed`);

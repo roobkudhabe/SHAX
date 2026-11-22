@@ -586,3 +586,6 @@ input[type="range"]{accent-color:var(--accent-fill);width:100%;margin:0;height:1
   .tab small{font-size:10px}
   .nav-icon,.nav-icon svg{width:14px;height:14px}
 }
+
+/* Lossless Vault safety: disabled auto-precompose is visually distinguishable. */
+.vault-source-option:disabled,.vault-source-option:disabled:hover{opacity:.50;cursor:not-allowed;background:var(--inset);border-color:var(--stroke);}
